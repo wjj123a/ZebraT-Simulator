@@ -20,7 +20,9 @@ That launches:
 - the local `R1` robot model
 - RViz with a navigation layout
 - `map_server + AMCL + move_base`
-- laser-based local obstacle avoidance
+- laser and RGB-D point-cloud local obstacle avoidance
+- a `/cmd_vel` safety supervisor that slows or stops the robot when front-range braking distance or TTC is unsafe
+- repeatable dynamic obstacles in `area.world`
 - `/cmd_vel` arbitration between RViz navigation and keyboard teleop
 
 After startup you can use RViz:
@@ -73,6 +75,8 @@ To use the RGB-D + 2D laser fusion backend powered by RTAB-Map:
 bash run_noetic.sh navigation_mode:=slam navigation_backend:=rtabmap
 ```
 
+RTAB-Map uses `/odom` by default so its odometry input matches the active `odom -> base_footprint` TF. Pass `rtabmap_enable_ekf_odom:=true` only when you intentionally want RTAB-Map to consume `/odometry/filtered`.
+
 To save a SLAM snapshot:
 
 ```bash
@@ -80,13 +84,20 @@ bash run_noetic.sh navigation_mode:=slam save_map:=true
 ```
 
 Saved maps are written under `zebrat/maps/`. RTAB-Map databases are stored under `zebrat/maps/rtabmap/`.
+Normal RTAB-Map launches preserve existing databases. The map-builder launch deletes the selected database by default for reproducible rebuilds; override with `rtabmap_delete_db_on_start:=false` when you want to continue an existing database.
 
 ### Dynamic Obstacle Tests
 
-The `area.world` scene can spawn repeatable mixed dynamic obstacles, including pedestrians and small carts:
+The `area.world` scene spawns repeatable mixed dynamic obstacles by default, including pedestrians and small carts. To launch the same default scene explicitly:
 
 ```bash
 bash run_noetic.sh world_name:=$(pwd)/zebrat/worlds/area.world navigation_mode:=map enable_dynamic_obstacles:=true
+```
+
+Disable them for static-only debugging with:
+
+```bash
+bash run_noetic.sh enable_dynamic_obstacles:=false
 ```
 
 For RTAB-Map SLAM with the same dynamic obstacles:
@@ -117,6 +128,7 @@ bash teleop_noetic.sh
 ```
 
 Teleop has short-term priority. When you stop sending keys, control returns to navigation automatically.
+Both teleop and navigation pass through `cmd_vel_safety_supervisor.py` before reaching Gazebo. Disable it only for raw controller tests with `enable_safety_supervisor:=false`.
 
 ## RViz-Only Model View
 

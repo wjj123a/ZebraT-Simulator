@@ -2,12 +2,14 @@
 <launch>
   <arg name="world_name" default="$(find zebrat)/worlds/area.world" />
   <arg name="navigation_backend" default="gmapping" />
+  <arg name="rtabmap_delete_db_on_start" default="true" />
   <arg name="map_output_prefix" default="$(find zebrat)/maps/area" />
 
   <include file="$(find zebrat)/launch/zebrat_with_world.launch">
     <arg name="robot" value="r1" />
     <arg name="world_name" value="$(arg world_name)" />
     <arg name="navigation_backend" value="$(arg navigation_backend)" />
+    <arg name="rtabmap_delete_db_on_start" value="$(arg rtabmap_delete_db_on_start)" />
     <arg name="navigation_mode" value="slam" />
     <arg name="gui" value="false" />
     <arg name="rviz" value="false" />

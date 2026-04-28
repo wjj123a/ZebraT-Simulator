@@ -7,12 +7,15 @@
   <arg name="depth_topic" default="/front_camera/depth/image_raw" />
   <arg name="camera_info_topic" default="/front_camera/rgb/camera_info" />
   <arg name="scan_topic" default="/scan" />
-  <arg name="odom_topic" default="/odometry/filtered" />
-  <arg name="rtabmap_args" default="--delete_db_on_start" />
+  <arg name="enable_ekf_odom" default="false" />
+  <arg name="odom_topic" default="$(eval '/odometry/filtered' if arg('enable_ekf_odom') else '/odom')" />
+  <arg name="delete_db_on_start" default="false" />
+  <arg name="rtabmap_args" default="$(eval '--delete_db_on_start' if arg('delete_db_on_start') else '')" />
 
   <param if="$(arg use_sim_time)" name="use_sim_time" value="true" />
 
   <node
+    if="$(arg enable_ekf_odom)"
     name="rtabmap_ekf"
     pkg="robot_localization"
     type="ekf_localization_node"

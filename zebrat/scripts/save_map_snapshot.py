@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 
+import hashlib
 import os
+import time
 
 import rospy
 from nav_msgs.msg import OccupancyGrid
@@ -11,12 +13,15 @@ class MapSnapshotSaver:
     def __init__(self):
         self.map_topic = rospy.get_param("~map_topic", "/map")
         self.output_prefix = rospy.get_param("~output_prefix")
-        self.idle_duration = rospy.Duration(rospy.get_param("~idle_duration", 8.0))
+        self.stable_duration = float(rospy.get_param("~idle_duration", 8.0))
+        self.max_wait_duration = float(rospy.get_param("~max_wait_duration", 180.0))
         self.min_known_cells = int(rospy.get_param("~min_known_cells", 100))
         self.min_width = int(rospy.get_param("~min_width", 20))
         self.min_height = int(rospy.get_param("~min_height", 20))
         self.latest_map = None
-        self.last_update_time = None
+        self.first_ready_wall = None
+        self.last_changed_wall = None
+        self.last_signature = None
         self.saved = False
 
         if not self.output_prefix:
@@ -27,7 +32,16 @@ class MapSnapshotSaver:
 
     def _map_callback(self, message):
         self.latest_map = message
-        self.last_update_time = rospy.Time.now()
+        if not self._map_is_ready(message):
+            return
+
+        now = time.monotonic()
+        signature = self._map_signature(message)
+        if self.first_ready_wall is None:
+            self.first_ready_wall = now
+        if signature != self.last_signature:
+            self.last_signature = signature
+            self.last_changed_wall = now
 
     def _map_is_ready(self, message):
         if message is None:
@@ -37,13 +51,33 @@ class MapSnapshotSaver:
         known_cells = sum(1 for value in message.data if value >= 0)
         return known_cells >= self.min_known_cells
 
+    def _map_signature(self, message):
+        digest = hashlib.blake2b(digest_size=12)
+        digest.update(str(message.info.width).encode("ascii"))
+        digest.update(str(message.info.height).encode("ascii"))
+        digest.update(f"{message.info.resolution:.6f}".encode("ascii"))
+        digest.update(f"{message.info.origin.position.x:.6f}".encode("ascii"))
+        digest.update(f"{message.info.origin.position.y:.6f}".encode("ascii"))
+        digest.update(bytes((value + 1) & 0xFF for value in message.data))
+        return digest.hexdigest()
+
     def _timer_callback(self, _event):
-        if self.saved or self.latest_map is None or self.last_update_time is None:
+        if self.saved or self.latest_map is None or self.first_ready_wall is None:
             return
         if not self._map_is_ready(self.latest_map):
             return
-        if rospy.Time.now() - self.last_update_time < self.idle_duration:
+
+        now = time.monotonic()
+        stable_for = now - (self.last_changed_wall or self.first_ready_wall)
+        waited_for = now - self.first_ready_wall
+        if stable_for < self.stable_duration and waited_for < self.max_wait_duration:
             return
+
+        if waited_for >= self.max_wait_duration:
+            rospy.logwarn(
+                "Saving map snapshot after max wait %.1fs even though changes are still arriving",
+                self.max_wait_duration,
+            )
         self._save(self.latest_map)
         self.saved = True
         rospy.signal_shutdown("map snapshot saved")

@@ -22,7 +22,7 @@ local_costmap:
     - {name: inflation_layer, type: "costmap_2d::InflationLayer"}
   obstacle_layer:
     track_unknown_space: false
-    observation_sources: laser_scan_sensor
+    observation_sources: laser_scan_sensor depth_cloud_sensor
     laser_scan_sensor:
       sensor_frame: laser_link
       data_type: LaserScan
@@ -34,6 +34,18 @@ local_costmap:
       expected_update_rate: 0.0
       obstacle_range: 4.5
       raytrace_range: 5.5
+    depth_cloud_sensor:
+      sensor_frame: camera_optical_link
+      data_type: PointCloud2
+      topic: /front_camera/depth/points
+      marking: true
+      clearing: true
+      min_obstacle_height: 0.05
+      max_obstacle_height: 1.80
+      observation_persistence: 0.0
+      expected_update_rate: 0.0
+      obstacle_range: 3.2
+      raytrace_range: 3.6
   inflation_layer:
     inflation_radius: 0.42
     cost_scaling_factor: 8.0

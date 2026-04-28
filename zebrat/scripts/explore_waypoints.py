@@ -74,12 +74,9 @@ class WaypointExplorer:
             else:
                 right_ranges.append(value)
 
-        if front_ranges:
-            self._front_min = min(front_ranges)
-        if left_ranges:
-            self._left_min = min(left_ranges)
-        if right_ranges:
-            self._right_min = min(right_ranges)
+        self._front_min = min(front_ranges) if front_ranges else float("inf")
+        self._left_min = min(left_ranges) if left_ranges else float("inf")
+        self._right_min = min(right_ranges) if right_ranges else float("inf")
 
     def _publish_stop(self):
         self._publisher.publish(Twist())

@@ -27,11 +27,13 @@
   <arg name="safe_goal_dynamic_route_inflation" default="0.42"/>
   <arg name="safe_goal_accept_xy_on_adjusted" default="true"/>
   <arg name="safe_goal_adjusted_xy_tolerance" default="0.25"/>
-  <arg name="enable_dynamic_obstacles" default="false"/>
+  <arg name="enable_dynamic_obstacles" default="true"/>
   <arg name="dynamic_obstacle_profile" default="area_mixed"/>
   <arg name="dynamic_obstacle_speed_scale" default="1.0"/>
   <arg name="navigation_backend" default="gmapping"/>
   <arg name="navigation_mode" default="map"/>
+  <arg name="rtabmap_enable_ekf_odom" default="false"/>
+  <arg name="rtabmap_delete_db_on_start" default="false"/>
   <arg name="map_file" default="$(find zebrat)/maps/area.yaml"/>
   <arg name="save_map" default="false"/>
   <arg name="map_output_prefix" default="$(find zebrat)/maps/$(arg world_profile)"/>
@@ -50,6 +52,13 @@
   <arg name="cmd_vel_max_linear_accel" default="0.40"/>
   <arg name="cmd_vel_max_angular_accel" default="0.80"/>
   <arg name="cmd_vel_timeout" default="0.40"/>
+  <arg name="enable_safety_supervisor" default="true"/>
+  <arg name="safety_hard_stop_distance" default="0.45"/>
+  <arg name="safety_slowdown_distance" default="0.85"/>
+  <arg name="safety_front_angle" default="0.65"/>
+  <arg name="safety_reaction_time" default="0.35"/>
+  <arg name="safety_ttc_stop_time" default="1.0"/>
+  <arg name="safety_cancel_on_emergency" default="false"/>
   <arg name="enable_cmd_vel_limiter" default="false"/>
   <arg name="enable_depth_camera" default="false"/>
   <arg name="enable_laser_visualization" default="false"/>
@@ -95,9 +104,27 @@
     output="screen">
     <param name="nav_topic" value="/cmd_vel_nav" />
     <param name="teleop_topic" value="/cmd_vel_teleop" />
-    <param name="output_topic" value="/cmd_vel" />
+    <param name="output_topic" value="$(eval '/cmd_vel_safety_in' if arg('enable_safety_supervisor') else '/cmd_vel')" />
     <param name="nav_timeout" value="$(arg cmd_vel_timeout)" />
     <param name="teleop_timeout" value="0.75" />
+  </node>
+
+  <node
+    if="$(arg enable_safety_supervisor)"
+    name="cmd_vel_safety_supervisor"
+    pkg="zebrat"
+    type="cmd_vel_safety_supervisor.py"
+    output="screen">
+    <param name="input_topic" value="/cmd_vel_safety_in" />
+    <param name="output_topic" value="/cmd_vel" />
+    <param name="scan_topic" value="/scan" />
+    <param name="hard_stop_distance" value="$(arg safety_hard_stop_distance)" />
+    <param name="slowdown_distance" value="$(arg safety_slowdown_distance)" />
+    <param name="front_angle" value="$(arg safety_front_angle)" />
+    <param name="reaction_time" value="$(arg safety_reaction_time)" />
+    <param name="max_deceleration" value="$(arg cmd_vel_max_linear_accel)" />
+    <param name="ttc_stop_time" value="$(arg safety_ttc_stop_time)" />
+    <param name="cancel_on_emergency" value="$(arg safety_cancel_on_emergency)" />
   </node>
 
   <node
@@ -181,6 +208,8 @@
         <include file="$(find zebrat)/launch/r1_rtabmap_slam.launch">
           <arg name="world_profile" value="$(arg world_profile)" />
           <arg name="use_sim_time" value="$(arg use_sim_time)" />
+          <arg name="enable_ekf_odom" value="$(arg rtabmap_enable_ekf_odom)" />
+          <arg name="delete_db_on_start" value="$(arg rtabmap_delete_db_on_start)" />
         </include>
       </group>
 

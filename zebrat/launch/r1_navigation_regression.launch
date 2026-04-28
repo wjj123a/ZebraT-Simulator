@@ -3,6 +3,8 @@
   <arg name="world_name" default="$(find zebrat)/worlds/area.world" />
   <arg name="navigation_backend" default="gmapping" />
   <arg name="navigation_mode" default="map" />
+  <arg name="rtabmap_enable_ekf_odom" default="false" />
+  <arg name="rtabmap_delete_db_on_start" default="false" />
   <arg name="map_file" default="$(find zebrat)/maps/area.yaml" />
   <arg name="goal_set" default="regression" />
   <arg name="gui" default="false" />
@@ -26,6 +28,10 @@
   <arg name="safe_goal_dynamic_route_inflation" default="0.42" />
   <arg name="safe_goal_accept_xy_on_adjusted" default="true" />
   <arg name="safe_goal_adjusted_xy_tolerance" default="0.25" />
+  <arg name="enable_safety_supervisor" default="true" />
+  <arg name="safety_hard_stop_distance" default="0.45" />
+  <arg name="safety_slowdown_distance" default="0.85" />
+  <arg name="safety_ttc_stop_time" default="1.0" />
   <arg name="x" default="0.0" />
   <arg name="y" default="0.0" />
   <arg name="z" default="0.02" />
@@ -43,10 +49,16 @@
     <arg name="dynamic_obstacle_profile" value="$(arg dynamic_obstacle_profile)" />
     <arg name="dynamic_obstacle_speed_scale" value="$(arg dynamic_obstacle_speed_scale)" />
     <arg name="navigation_backend" value="$(arg navigation_backend)" />
+    <arg name="rtabmap_enable_ekf_odom" value="$(arg rtabmap_enable_ekf_odom)" />
+    <arg name="rtabmap_delete_db_on_start" value="$(arg rtabmap_delete_db_on_start)" />
     <arg name="navigation_mode" value="$(arg navigation_mode)" />
     <arg name="map_file" value="$(arg map_file)" />
     <arg name="save_map" value="$(arg save_map)" />
     <arg name="map_output_prefix" value="$(arg map_output_prefix)" />
+    <arg name="enable_safety_supervisor" value="$(arg enable_safety_supervisor)" />
+    <arg name="safety_hard_stop_distance" value="$(arg safety_hard_stop_distance)" />
+    <arg name="safety_slowdown_distance" value="$(arg safety_slowdown_distance)" />
+    <arg name="safety_ttc_stop_time" value="$(arg safety_ttc_stop_time)" />
     <arg name="x" value="$(arg x)" />
     <arg name="y" value="$(arg y)" />
     <arg name="z" value="$(arg z)" />

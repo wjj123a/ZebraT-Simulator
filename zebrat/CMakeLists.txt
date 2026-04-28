@@ -168,6 +168,7 @@ include_directories(
 ## in contrast to setup.py, you can choose the destination
 catkin_install_python(PROGRAMS
   scripts/cmd_vel_arbiter.py
+  scripts/cmd_vel_safety_supervisor.py
   scripts/dynamic_obstacles.py
   scripts/explore_waypoints.py
   scripts/gazebo_auto_unpause.py

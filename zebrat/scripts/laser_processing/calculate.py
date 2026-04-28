@@ -9,7 +9,7 @@ def calculate(n_scans, resolution, length = 1, width = 0.6, lidar_pos = (0.3, 0.
     w = width # region width
     x, y = lidar_pos
     inc = 2*pi/n # increment
-    ''' Center is the lidar position, phase number are shown below:
+    r''' Center is the lidar position, phase number are shown below:
                      \ 5|4 /
                     6 \ | / 3
                        \|/
@@ -103,5 +103,4 @@ print(zeros)
 
 
 # [1.962, 1.896, 1.678, 1.526, 1.508, 1.478, 1.454, 1.428, 1.332, 1.164, 1.014, 0.91, 0.908, 0.994, 1.078, 1.42, 1.09, 1.472, 1.164, 1.088, 1.036, 1.086, 1.234, 7.288, 6.536, 6.08, 2.996, 2.808, 2.66, 2.52, 2.276, 2.088]
-
 

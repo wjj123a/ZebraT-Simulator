@@ -76,6 +76,7 @@
   <exec_depend>gazebo_ros</exec_depend>
   <exec_depend>gazebo_ros_control</exec_depend>
   <exec_depend>geometry_msgs</exec_depend>
+  <exec_depend>gmapping</exec_depend>
   <exec_depend>actionlib</exec_depend>
   <exec_depend>actionlib_msgs</exec_depend>
   <exec_depend>amcl</exec_depend>
