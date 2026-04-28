@@ -31,3 +31,7 @@ return_mid_probe_upperhub_goals:
   - {name: return_mid_upperhub, x: 2.85, y: 7.35, yaw: 2.8, timeout: 90.0, allow_blocked: true, stop_on_blocked: true}
 north_edge_probe_free_goals:
   - {name: north_edge_free, x: -1.05, y: 8.35, yaw: 3.0, timeout: 90.0, allow_blocked: true, stop_on_blocked: true}
+dynamic_goal_path_probe_goals:
+  - {name: pedestrian_route_goal, x: 2.75, y: 0.0, yaw: 0.0, timeout: 90.0, allow_blocked: true, stop_on_blocked: true}
+dynamic_goal_path_safe_goals:
+  - {name: pedestrian_route_goal_offset, x: 3.45, y: 0.0, yaw: 0.0, timeout: 90.0}

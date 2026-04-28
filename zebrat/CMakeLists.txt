@@ -178,9 +178,15 @@ catkin_install_python(PROGRAMS
   scripts/navigation_regression.py
   scripts/odom_pub.py
   scripts/publish_initial_pose.py
+  scripts/safe_goal_relay.py
   scripts/pose_pub.py
   scripts/save_map_snapshot.py
   scripts/servo_commands.py
+  DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
+
+install(FILES
+  scripts/goal_safety.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 

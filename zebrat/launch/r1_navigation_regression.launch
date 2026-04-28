@@ -17,6 +17,15 @@
   <arg name="continue_on_failure" default="false" />
   <arg name="server_timeout" default="120.0" />
   <arg name="startup_delay" default="12.0" />
+  <arg name="safe_goal_enabled" default="true" />
+  <arg name="safe_goal_wait_timeout" default="6.0" />
+  <arg name="safe_goal_search_radius" default="1.2" />
+  <arg name="safe_goal_search_step" default="0.10" />
+  <arg name="safe_goal_target_check_radius" default="0.35" />
+  <arg name="safe_goal_use_dynamic_routes" default="true" />
+  <arg name="safe_goal_dynamic_route_inflation" default="0.42" />
+  <arg name="safe_goal_accept_xy_on_adjusted" default="true" />
+  <arg name="safe_goal_adjusted_xy_tolerance" default="0.25" />
   <arg name="x" default="0.0" />
   <arg name="y" default="0.0" />
   <arg name="z" default="0.02" />
@@ -54,5 +63,14 @@
     <param name="continue_on_failure" value="$(arg continue_on_failure)" />
     <param name="server_timeout" value="$(arg server_timeout)" />
     <param name="startup_delay" value="$(arg startup_delay)" />
+    <param name="safe_goal_enabled" value="$(arg safe_goal_enabled)" />
+    <param name="safe_goal_wait_timeout" value="$(arg safe_goal_wait_timeout)" />
+    <param name="safe_goal_search_radius" value="$(arg safe_goal_search_radius)" />
+    <param name="safe_goal_search_step" value="$(arg safe_goal_search_step)" />
+    <param name="safe_goal_target_check_radius" value="$(arg safe_goal_target_check_radius)" />
+    <param name="safe_goal_use_dynamic_routes" value="$(arg safe_goal_use_dynamic_routes)" />
+    <param name="safe_goal_dynamic_route_inflation" value="$(arg safe_goal_dynamic_route_inflation)" />
+    <param name="safe_goal_accept_xy_on_adjusted" value="$(arg safe_goal_accept_xy_on_adjusted)" />
+    <param name="safe_goal_adjusted_xy_tolerance" value="$(arg safe_goal_adjusted_xy_tolerance)" />
   </node>
 </launch>

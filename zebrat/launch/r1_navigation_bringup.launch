@@ -16,6 +16,17 @@
   <arg name="rviz_config" default="$(find zebrat)/rviz/navigation.rviz"/>
   <arg name="enable_navigation" default="true"/>
   <arg name="enable_move_base" default="true"/>
+  <arg name="enable_safe_goal_relay" default="true"/>
+  <arg name="safe_goal_input_topic" default="/safe_move_base_simple/goal"/>
+  <arg name="safe_goal_output_topic" default="/move_base_simple/goal"/>
+  <arg name="safe_goal_wait_timeout" default="6.0"/>
+  <arg name="safe_goal_search_radius" default="1.2"/>
+  <arg name="safe_goal_search_step" default="0.10"/>
+  <arg name="safe_goal_target_check_radius" default="0.35"/>
+  <arg name="safe_goal_use_dynamic_routes" default="true"/>
+  <arg name="safe_goal_dynamic_route_inflation" default="0.42"/>
+  <arg name="safe_goal_accept_xy_on_adjusted" default="true"/>
+  <arg name="safe_goal_adjusted_xy_tolerance" default="0.25"/>
   <arg name="enable_dynamic_obstacles" default="false"/>
   <arg name="dynamic_obstacle_profile" default="area_mixed"/>
   <arg name="dynamic_obstacle_speed_scale" default="1.0"/>
@@ -206,6 +217,24 @@
         type="move_base"
         output="screen">
         <remap from="cmd_vel" to="/cmd_vel_nav" />
+      </node>
+
+      <node
+        if="$(arg enable_safe_goal_relay)"
+        name="safe_goal_relay"
+        pkg="zebrat"
+        type="safe_goal_relay.py"
+        output="screen">
+        <param name="input_topic" value="$(arg safe_goal_input_topic)" />
+        <param name="output_topic" value="$(arg safe_goal_output_topic)" />
+        <param name="wait_timeout" value="$(arg safe_goal_wait_timeout)" />
+        <param name="search_radius" value="$(arg safe_goal_search_radius)" />
+        <param name="search_step" value="$(arg safe_goal_search_step)" />
+        <param name="target_check_radius" value="$(arg safe_goal_target_check_radius)" />
+        <param name="use_dynamic_routes" value="$(arg safe_goal_use_dynamic_routes)" />
+        <param name="dynamic_route_inflation" value="$(arg safe_goal_dynamic_route_inflation)" />
+        <param name="accept_xy_on_adjusted" value="$(arg safe_goal_accept_xy_on_adjusted)" />
+        <param name="adjusted_xy_tolerance" value="$(arg safe_goal_adjusted_xy_tolerance)" />
       </node>
     </group>
   </group>

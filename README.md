@@ -26,7 +26,12 @@ That launches:
 After startup you can use RViz:
 
 - `2D Pose Estimate` to relocalize
-- `2D Nav Goal` to send navigation goals
+- `2D Nav Goal` to send navigation goals through the safe goal relay
+
+The RViz goal tool publishes to `/safe_move_base_simple/goal`. The `safe_goal_relay`
+checks the active costmaps, waits briefly if the requested goal is temporarily occupied,
+and relocates the navigation goal to the nearest safe cell when the requested point stays
+blocked, unknown, or inside a configured dynamic obstacle route.
 
 ## Navigation Modes
 
@@ -92,6 +97,12 @@ bash run_noetic.sh world_name:=$(pwd)/zebrat/worlds/area.world navigation_mode:=
 
 Use `dynamic_obstacle_speed_scale:=0.6`, `1.0`, or `1.4` to run slower or faster obstacle tests.
 Gazebo is automatically unpaused by default for R1 launches. Use `auto_unpause:=false` only when you intentionally want Gazebo to stay paused for debugging.
+
+To disable safe goal relocation for raw `move_base` behavior tests:
+
+```bash
+roslaunch zebrat r1_navigation_regression.launch enable_dynamic_obstacles:=true goal_set:=dynamic_goal_path_probe safe_goal_enabled:=false
+```
 
 ## Teleop
 

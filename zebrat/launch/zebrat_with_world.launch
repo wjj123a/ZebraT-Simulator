@@ -27,6 +27,17 @@
   <arg name="rviz" default="true"/>
   <arg name="enable_navigation" default="true"/>
   <arg name="enable_move_base" default="true"/>
+  <arg name="enable_safe_goal_relay" default="true"/>
+  <arg name="safe_goal_input_topic" default="/safe_move_base_simple/goal"/>
+  <arg name="safe_goal_output_topic" default="/move_base_simple/goal"/>
+  <arg name="safe_goal_wait_timeout" default="6.0"/>
+  <arg name="safe_goal_search_radius" default="1.2"/>
+  <arg name="safe_goal_search_step" default="0.10"/>
+  <arg name="safe_goal_target_check_radius" default="0.35"/>
+  <arg name="safe_goal_use_dynamic_routes" default="true"/>
+  <arg name="safe_goal_dynamic_route_inflation" default="0.42"/>
+  <arg name="safe_goal_accept_xy_on_adjusted" default="true"/>
+  <arg name="safe_goal_adjusted_xy_tolerance" default="0.25"/>
   <arg name="enable_dynamic_obstacles" default="false"/>
   <arg name="dynamic_obstacle_profile" default="area_mixed"/>
   <arg name="dynamic_obstacle_speed_scale" default="1.0"/>
@@ -60,6 +71,17 @@
     <arg name="rviz_config" value="$(arg rviz_config)" />
     <arg name="enable_navigation" value="$(arg enable_navigation)" />
     <arg name="enable_move_base" value="$(arg enable_move_base)" />
+    <arg name="enable_safe_goal_relay" value="$(arg enable_safe_goal_relay)" />
+    <arg name="safe_goal_input_topic" value="$(arg safe_goal_input_topic)" />
+    <arg name="safe_goal_output_topic" value="$(arg safe_goal_output_topic)" />
+    <arg name="safe_goal_wait_timeout" value="$(arg safe_goal_wait_timeout)" />
+    <arg name="safe_goal_search_radius" value="$(arg safe_goal_search_radius)" />
+    <arg name="safe_goal_search_step" value="$(arg safe_goal_search_step)" />
+    <arg name="safe_goal_target_check_radius" value="$(arg safe_goal_target_check_radius)" />
+    <arg name="safe_goal_use_dynamic_routes" value="$(arg safe_goal_use_dynamic_routes)" />
+    <arg name="safe_goal_dynamic_route_inflation" value="$(arg safe_goal_dynamic_route_inflation)" />
+    <arg name="safe_goal_accept_xy_on_adjusted" value="$(arg safe_goal_accept_xy_on_adjusted)" />
+    <arg name="safe_goal_adjusted_xy_tolerance" value="$(arg safe_goal_adjusted_xy_tolerance)" />
     <arg name="enable_dynamic_obstacles" value="$(arg enable_dynamic_obstacles)" />
     <arg name="dynamic_obstacle_profile" value="$(arg dynamic_obstacle_profile)" />
     <arg name="dynamic_obstacle_speed_scale" value="$(arg dynamic_obstacle_speed_scale)" />

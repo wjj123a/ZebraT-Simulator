@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import math
+import os
 import sys
 import time
 
@@ -14,6 +15,9 @@ from nav_msgs.msg import Odometry
 from sensor_msgs.msg import LaserScan
 from geometry_msgs.msg import Twist
 from tf.transformations import euler_from_quaternion
+
+sys.path.insert(0, os.path.dirname(__file__))
+from goal_safety import CostmapGoalResolver, normalize_topic_list  # noqa: E402
 
 
 STATUS_NAMES = {
@@ -42,11 +46,35 @@ class NavigationRegression:
         self.idle_cmd_vel_timeout = float(rospy.get_param("~idle_cmd_vel_timeout", 20.0))
         self.frame_id = rospy.get_param("~frame_id", "map")
         self.goals = rospy.get_param(f"~{self.goal_set}_goals", [])
+        self.safe_goal_enabled = bool(rospy.get_param("~safe_goal_enabled", True))
+        self.safe_goal_accept_xy_on_adjusted = bool(rospy.get_param("~safe_goal_accept_xy_on_adjusted", True))
+        self.safe_goal_adjusted_xy_tolerance = float(rospy.get_param("~safe_goal_adjusted_xy_tolerance", 0.25))
 
         if not self.goals:
             raise rospy.ROSInitException(f"No goals configured for set '{self.goal_set}'")
 
         self._client = actionlib.SimpleActionClient(self.action_name, MoveBaseAction)
+        self._goal_resolver = None
+        if self.safe_goal_enabled:
+            costmap_topics = normalize_topic_list(
+                rospy.get_param(
+                    "~safe_goal_costmap_topics",
+                    ["/move_base/local_costmap/costmap", "/move_base/global_costmap/costmap"],
+                )
+            )
+            self._goal_resolver = CostmapGoalResolver(
+                costmap_topics=costmap_topics,
+                occupied_threshold=rospy.get_param("~safe_goal_occupied_threshold", 65),
+                unknown_is_occupied=rospy.get_param("~safe_goal_unknown_is_occupied", True),
+                target_check_radius=rospy.get_param("~safe_goal_target_check_radius", 0.35),
+                search_radius=rospy.get_param("~safe_goal_search_radius", 1.2),
+                search_step=rospy.get_param("~safe_goal_search_step", 0.10),
+                wait_timeout=rospy.get_param("~safe_goal_wait_timeout", 6.0),
+                wait_check_period=rospy.get_param("~safe_goal_wait_check_period", 0.5),
+                costmap_wait_timeout=rospy.get_param("~safe_goal_costmap_wait_timeout", 10.0),
+                use_dynamic_routes=rospy.get_param("~safe_goal_use_dynamic_routes", True),
+                dynamic_route_inflation=rospy.get_param("~safe_goal_dynamic_route_inflation", 0.42),
+            )
         self._last_scan_min = float("inf")
         self._last_cmd_vel_wall = time.monotonic()
         self._collision_proxy_triggered = False
@@ -104,17 +132,44 @@ class NavigationRegression:
 
         raise rospy.ROSInitException(f"Timed out waiting for action server {self.action_name}")
 
+    def _to_pose(self, item):
+        pose = PoseStamped()
+        pose.header.frame_id = self.frame_id
+        pose.header.stamp = rospy.Time.now()
+        pose.pose.position.x = float(item["x"])
+        pose.pose.position.y = float(item["y"])
+        yaw = float(item.get("yaw", 0.0))
+        pose.pose.orientation.z = math.sin(yaw / 2.0)
+        pose.pose.orientation.w = math.cos(yaw / 2.0)
+        return pose
+
     def _to_goal(self, item):
         goal = MoveBaseGoal()
-        goal.target_pose = PoseStamped()
-        goal.target_pose.header.frame_id = self.frame_id
-        goal.target_pose.header.stamp = rospy.Time.now()
-        goal.target_pose.pose.position.x = float(item["x"])
-        goal.target_pose.pose.position.y = float(item["y"])
-        yaw = float(item.get("yaw", 0.0))
-        goal.target_pose.pose.orientation.z = math.sin(yaw / 2.0)
-        goal.target_pose.pose.orientation.w = math.cos(yaw / 2.0)
+        goal.target_pose = self._to_pose(item)
         return goal
+
+    def _resolve_goal_item(self, goal_item, name):
+        if not self._goal_resolver or not goal_item.get("safe_goal", True):
+            return dict(goal_item)
+
+        requested_pose = self._to_pose(goal_item)
+        resolved = self._goal_resolver.resolve_pose(requested_pose, name)
+        resolved_item = dict(goal_item)
+        if resolved.adjusted:
+            resolved_item["requested_x"] = float(goal_item["x"])
+            resolved_item["requested_y"] = float(goal_item["y"])
+            resolved_item["safe_goal_adjusted"] = True
+            resolved_item["x"] = float(resolved.pose.pose.position.x)
+            resolved_item["y"] = float(resolved.pose.pose.position.y)
+            rospy.loginfo(
+                "Using adjusted navigation goal %s: requested=(%.2f, %.2f), sent=(%.2f, %.2f)",
+                name,
+                resolved_item["requested_x"],
+                resolved_item["requested_y"],
+                resolved_item["x"],
+                resolved_item["y"],
+            )
+        return resolved_item
 
     def _is_allowed_terminal_state(self, status, goal_item):
         if status == GoalStatus.SUCCEEDED:
@@ -151,6 +206,14 @@ class NavigationRegression:
                 self._client.cancel_goal()
                 rospy.logerr("Collision proxy triggered while driving to %s (min scan %.3f)", name, self._last_scan_min)
                 return GoalStatus.ABORTED
+            if self._adjusted_goal_xy_reached(goal_item):
+                self._client.cancel_goal()
+                rospy.loginfo(
+                    "Adjusted goal %s reached XY tolerance %.2fm; accepting without final yaw alignment",
+                    name,
+                    self.safe_goal_adjusted_xy_tolerance,
+                )
+                return GoalStatus.SUCCEEDED
             if time.monotonic() > deadline:
                 self._client.cancel_goal()
                 rospy.logwarn("Goal %s timed out after %.1fs", name, float(goal_item.get("timeout", self.default_timeout)))
@@ -162,6 +225,15 @@ class NavigationRegression:
 
         self._client.cancel_all_goals()
         return GoalStatus.PREEMPTED
+
+    def _adjusted_goal_xy_reached(self, goal_item):
+        if not self.safe_goal_accept_xy_on_adjusted or not goal_item.get("safe_goal_adjusted", False):
+            return False
+        pose = self._map_pose or self._odom_pose
+        if pose is None:
+            return False
+        x, y, _yaw = pose
+        return math.hypot(float(goal_item["x"]) - x, float(goal_item["y"]) - y) <= self.safe_goal_adjusted_xy_tolerance
 
     @staticmethod
     def _format_elapsed(elapsed_seconds):
@@ -190,10 +262,14 @@ class NavigationRegression:
         goal_yaw = float(goal_item.get("yaw", 0.0))
         position_error = math.hypot(goal_x - x, goal_y - y)
         yaw_error = abs(self._wrap_to_pi(goal_yaw - yaw))
-        return (
+        metrics = (
             f"{pose_label}=({x:.2f},{y:.2f},{yaw:.2f}) "
             f"goal_err=({position_error:.2f}m,{yaw_error:.2f}rad)"
         )
+        if "requested_x" in goal_item and "requested_y" in goal_item:
+            requested_error = math.hypot(float(goal_item["requested_x"]) - x, float(goal_item["requested_y"]) - y)
+            metrics += f" requested_goal_err={requested_error:.2f}m"
+        return metrics
 
     def run(self):
         if self.startup_delay > 0.0:
@@ -204,22 +280,23 @@ class NavigationRegression:
 
         for index, goal_item in enumerate(self.goals, start=1):
             name = goal_item.get("name", f"goal_{index}")
+            nav_goal_item = self._resolve_goal_item(goal_item, name)
             self._collision_proxy_triggered = False
             goal_wall_start = time.monotonic()
-            self._client.send_goal(self._to_goal(goal_item))
+            self._client.send_goal(self._to_goal(nav_goal_item))
             rospy.loginfo(
                 "[%d/%d] Sent goal %s to (%.2f, %.2f, %.2f)",
                 index,
                 len(self.goals),
                 name,
-                float(goal_item["x"]),
-                float(goal_item["y"]),
-                float(goal_item.get("yaw", 0.0)),
+                float(nav_goal_item["x"]),
+                float(nav_goal_item["y"]),
+                float(nav_goal_item.get("yaw", 0.0)),
             )
-            status = self._wait_for_result(goal_item)
+            status = self._wait_for_result(nav_goal_item)
             status_name = STATUS_NAMES.get(status, str(status))
             elapsed = self._format_elapsed(time.monotonic() - goal_wall_start)
-            metrics = self._format_goal_metrics(goal_item)
+            metrics = self._format_goal_metrics(nav_goal_item)
             if self._is_allowed_terminal_state(status, goal_item):
                 rospy.loginfo(
                     "[%d/%d] Goal %s finished with %s after %s (%s)",
