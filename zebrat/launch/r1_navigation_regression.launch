@@ -1,0 +1,58 @@
+<?xml version="1.0"?>
+<launch>
+  <arg name="world_name" default="$(find zebrat)/worlds/area.world" />
+  <arg name="navigation_backend" default="gmapping" />
+  <arg name="navigation_mode" default="map" />
+  <arg name="map_file" default="$(find zebrat)/maps/area.yaml" />
+  <arg name="goal_set" default="regression" />
+  <arg name="gui" default="false" />
+  <arg name="rviz" default="false" />
+  <arg name="paused" default="false" />
+  <arg name="auto_unpause" default="true" />
+  <arg name="enable_dynamic_obstacles" default="false" />
+  <arg name="dynamic_obstacle_profile" default="area_mixed" />
+  <arg name="dynamic_obstacle_speed_scale" default="1.0" />
+  <arg name="save_map" default="false" />
+  <arg name="map_output_prefix" default="$(find zebrat)/maps/area" />
+  <arg name="continue_on_failure" default="false" />
+  <arg name="server_timeout" default="120.0" />
+  <arg name="startup_delay" default="12.0" />
+  <arg name="x" default="0.0" />
+  <arg name="y" default="0.0" />
+  <arg name="z" default="0.02" />
+  <arg name="yaw" default="0.0" />
+
+  <include file="$(find zebrat)/launch/zebrat_with_world.launch">
+    <arg name="robot" value="r1" />
+    <arg name="world_name" value="$(arg world_name)" />
+    <arg name="gui" value="$(arg gui)" />
+    <arg name="paused" value="$(arg paused)" />
+    <arg name="auto_unpause" value="$(arg auto_unpause)" />
+    <arg name="rviz" value="$(arg rviz)" />
+    <arg name="enable_navigation" value="true" />
+    <arg name="enable_dynamic_obstacles" value="$(arg enable_dynamic_obstacles)" />
+    <arg name="dynamic_obstacle_profile" value="$(arg dynamic_obstacle_profile)" />
+    <arg name="dynamic_obstacle_speed_scale" value="$(arg dynamic_obstacle_speed_scale)" />
+    <arg name="navigation_backend" value="$(arg navigation_backend)" />
+    <arg name="navigation_mode" value="$(arg navigation_mode)" />
+    <arg name="map_file" value="$(arg map_file)" />
+    <arg name="save_map" value="$(arg save_map)" />
+    <arg name="map_output_prefix" value="$(arg map_output_prefix)" />
+    <arg name="x" value="$(arg x)" />
+    <arg name="y" value="$(arg y)" />
+    <arg name="z" value="$(arg z)" />
+    <arg name="yaw" value="$(arg yaw)" />
+  </include>
+
+  <node
+    name="navigation_regression"
+    pkg="zebrat"
+    type="navigation_regression.py"
+    output="screen">
+    <rosparam command="load" file="$(find zebrat)/config/navigation_goals_area.yaml" />
+    <param name="goal_set" value="$(arg goal_set)" />
+    <param name="continue_on_failure" value="$(arg continue_on_failure)" />
+    <param name="server_timeout" value="$(arg server_timeout)" />
+    <param name="startup_delay" value="$(arg startup_delay)" />
+  </node>
+</launch>

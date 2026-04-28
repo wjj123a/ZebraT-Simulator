@@ -1,0 +1,78 @@
+<?xml version="1.0"?>
+<launch>
+  <arg name="world_profile" default="area" />
+  <arg name="use_sim_time" default="true" />
+  <arg name="database_path" default="$(find zebrat)/maps/rtabmap/$(arg world_profile).db" />
+  <arg name="rgb_topic" default="/front_camera/rgb/image_raw" />
+  <arg name="depth_topic" default="/front_camera/depth/image_raw" />
+  <arg name="camera_info_topic" default="/front_camera/rgb/camera_info" />
+  <arg name="scan_topic" default="/scan" />
+  <arg name="odom_topic" default="/odometry/filtered" />
+  <arg name="rtabmap_args" default="--delete_db_on_start" />
+
+  <param if="$(arg use_sim_time)" name="use_sim_time" value="true" />
+
+  <node
+    name="rtabmap_ekf"
+    pkg="robot_localization"
+    type="ekf_localization_node"
+    clear_params="true"
+    output="screen">
+    <rosparam command="load" file="$(find zebrat)/config/rtabmap_ekf.yaml" />
+  </node>
+
+  <group ns="rtabmap">
+    <node
+      name="rtabmap"
+      pkg="rtabmap_slam"
+      type="rtabmap"
+      clear_params="true"
+      output="screen"
+      args="$(arg rtabmap_args)">
+      <param name="frame_id" type="string" value="base_footprint" />
+      <param name="wait_for_transform_duration" type="double" value="0.5" />
+      <param name="subscribe_rgb" type="bool" value="true" />
+      <param name="subscribe_depth" type="bool" value="true" />
+      <param name="subscribe_scan" type="bool" value="true" />
+      <param name="approx_sync" type="bool" value="true" />
+      <param name="topic_queue_size" type="int" value="10" />
+      <param name="sync_queue_size" type="int" value="10" />
+      <param name="database_path" type="string" value="$(arg database_path)" />
+      <param name="RGBD/CreateOccupancyGrid" type="string" value="true" />
+      <param name="RGBD/NeighborLinkRefining" type="string" value="true" />
+      <param name="RGBD/ProximityBySpace" type="string" value="true" />
+      <param name="RGBD/ProximityByTime" type="string" value="false" />
+      <param name="RGBD/ProximityPathMaxNeighbors" type="string" value="10" />
+      <param name="RGBD/OptimizeFromGraphEnd" type="string" value="false" />
+      <param name="RGBD/OptimizeMaxError" type="string" value="4" />
+      <param name="RGBD/LinearUpdate" type="string" value="0.05" />
+      <param name="RGBD/AngularUpdate" type="string" value="0.05" />
+      <param name="RGBD/LocalRadius" type="string" value="5" />
+      <param name="Reg/Strategy" type="string" value="2" />
+      <param name="Reg/Force3DoF" type="string" value="true" />
+      <param name="Grid/Sensor" type="string" value="2" />
+      <param name="Grid/CellSize" type="string" value="0.05" />
+      <param name="Grid/RangeMax" type="string" value="8.0" />
+      <param name="Grid/RayTracing" type="string" value="true" />
+      <param name="Grid/Scan2dUnknownSpaceFilled" type="string" value="true" />
+      <param name="GridGlobal/MinSize" type="string" value="20" />
+      <param name="GridGlobal/ProbMiss" type="string" value="0.35" />
+      <param name="Mem/STMSize" type="string" value="30" />
+      <param name="Vis/MinInliers" type="string" value="12" />
+      <param name="Icp/CorrespondenceRatio" type="string" value="0.2" />
+      <param name="Icp/Strategy" type="string" value="0" />
+      <param name="Icp/PointToPlane" type="string" value="false" />
+      <param name="Icp/MaxCorrespondenceDistance" type="string" value="0.15" />
+      <param name="Icp/VoxelSize" type="string" value="0.05" />
+      <param name="Mem/IncrementalMemory" type="string" value="true" />
+      <param name="Mem/InitWMWithAllNodes" type="string" value="false" />
+
+      <remap from="rgb/image" to="$(arg rgb_topic)" />
+      <remap from="depth/image" to="$(arg depth_topic)" />
+      <remap from="rgb/camera_info" to="$(arg camera_info_topic)" />
+      <remap from="scan" to="$(arg scan_topic)" />
+      <remap from="odom" to="$(arg odom_topic)" />
+      <remap from="grid_map" to="/map" />
+    </node>
+  </group>
+</launch>

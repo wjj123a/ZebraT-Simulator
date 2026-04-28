@@ -1,0 +1,117 @@
+<?xml version="1.0"?>
+<launch>
+  <arg name="robot" default="r1"/>
+  <arg name="world_name" default="$(find zebrat)/worlds/area.world"/>
+  <arg name="gui" default="true"/>
+  <arg name="paused" default="false"/>
+  <arg name="auto_unpause" default="true"/>
+  <arg name="use_sim_time" default="true"/>
+  <arg name="headless" default="false"/>
+  <arg name="debug" default="false"/>
+  <arg name="physics" default="ode"/>
+  <arg name="verbose" default="false"/>
+  <arg
+    name="world_profile"
+    default="$(eval 'empty_wall' if 'empty_wall.world' in arg('world_name') else 'empty' if 'empty.world' in arg('world_name') else 'wall_right_angle' if 'wall_right_angle.world' in arg('world_name') else 'racecar_cones' if 'racecar_cones.world' in arg('world_name') else 'racecar_parking_1' if 'racecar_parking_1.world' in arg('world_name') else 'racecar_tunnel' if 'racecar_tunnel.world' in arg('world_name') else 'racecar_walker' if 'racecar_walker.world' in arg('world_name') else 'racecar_ar' if 'racecar_ar.world' in arg('world_name') else 'racecar' if 'racecar.world' in arg('world_name') else 'racetrack' if 'racetrack.world' in arg('world_name') else 'area' if 'area.world' in arg('world_name') else 'custom')"/>
+  <arg
+    name="x"
+    default="$(eval 0.0 if arg('world_profile') in ['empty', 'racecar', 'area', 'custom'] else -2.0 if arg('world_profile') == 'empty_wall' else 1.0 if arg('world_profile') == 'wall_right_angle' else 0.0 if arg('world_profile') == 'racecar_ar' else 0.0 if arg('world_profile') == 'racecar_cones' else 1.8 if arg('world_profile') == 'racecar_parking_1' else 0.0 if arg('world_profile') == 'racecar_tunnel' else 0.0 if arg('world_profile') == 'racecar_walker' else -9.0 if arg('world_profile') == 'racetrack' else 0.0)"/>
+  <arg
+    name="y"
+    default="$(eval 0.0 if arg('world_profile') in ['empty', 'racecar', 'area', 'custom'] else 0.0 if arg('world_profile') == 'empty_wall' else 1.5 if arg('world_profile') == 'wall_right_angle' else -1.0 if arg('world_profile') == 'racecar_ar' else -1.5 if arg('world_profile') == 'racecar_cones' else -1.5 if arg('world_profile') == 'racecar_parking_1' else 0.0 if arg('world_profile') == 'racecar_tunnel' else 0.0 if arg('world_profile') == 'racecar_walker' else -2.0 if arg('world_profile') == 'racetrack' else 0.0)"/>
+  <arg name="z" default="0.02"/>
+  <arg name="yaw" default="$(eval 0.0 if arg('world_profile') not in ['racecar_parking_1'] else 1.57)"/>
+  <arg name="enable_depth_camera" default="false"/>
+  <arg name="enable_laser_visualization" default="false"/>
+  <arg name="enable_cmd_vel_limiter" default="false"/>
+  <arg name="rviz" default="true"/>
+  <arg name="enable_navigation" default="true"/>
+  <arg name="enable_move_base" default="true"/>
+  <arg name="enable_dynamic_obstacles" default="false"/>
+  <arg name="dynamic_obstacle_profile" default="area_mixed"/>
+  <arg name="dynamic_obstacle_speed_scale" default="1.0"/>
+  <arg name="navigation_backend" default="gmapping"/>
+  <arg
+    name="rviz_config"
+    default="$(eval find('zebrat') + '/rviz/rtabmap_navigation.rviz' if arg('navigation_backend') == 'rtabmap' else find('zebrat') + '/rviz/navigation.rviz')"/>
+  <arg name="navigation_mode" default="map"/>
+  <arg name="map_file" default="$(find zebrat)/maps/area.yaml"/>
+  <arg name="save_map" default="false"/>
+  <arg name="map_output_prefix" default="$(find zebrat)/maps/$(arg world_profile)"/>
+  <arg name="cmd_vel_max_linear_x" default="0.22"/>
+  <arg name="cmd_vel_max_linear_y" default="0.0"/>
+  <arg name="cmd_vel_max_angular_z" default="0.50"/>
+  <arg name="cmd_vel_max_linear_accel" default="0.40"/>
+  <arg name="cmd_vel_max_angular_accel" default="0.80"/>
+  <arg name="cmd_vel_timeout" default="0.40"/>
+
+  <include
+    if="$(eval arg('robot') == 'r1')"
+    file="$(find zebrat)/launch/r1_navigation_bringup.launch">
+    <arg name="world_profile" value="$(arg world_profile)" />
+    <arg name="world_name" value="$(arg world_name)" />
+    <arg name="gui" value="$(arg gui)" />
+    <arg name="paused" value="$(arg paused)" />
+    <arg name="auto_unpause" value="$(arg auto_unpause)" />
+    <arg name="use_sim_time" value="$(arg use_sim_time)" />
+    <arg name="physics" value="$(arg physics)" />
+    <arg name="verbose" value="$(arg verbose)" />
+    <arg name="rviz" value="$(arg rviz)" />
+    <arg name="rviz_config" value="$(arg rviz_config)" />
+    <arg name="enable_navigation" value="$(arg enable_navigation)" />
+    <arg name="enable_move_base" value="$(arg enable_move_base)" />
+    <arg name="enable_dynamic_obstacles" value="$(arg enable_dynamic_obstacles)" />
+    <arg name="dynamic_obstacle_profile" value="$(arg dynamic_obstacle_profile)" />
+    <arg name="dynamic_obstacle_speed_scale" value="$(arg dynamic_obstacle_speed_scale)" />
+    <arg name="navigation_backend" value="$(arg navigation_backend)" />
+    <arg name="navigation_mode" value="$(arg navigation_mode)" />
+    <arg name="map_file" value="$(arg map_file)" />
+    <arg name="save_map" value="$(arg save_map)" />
+    <arg name="map_output_prefix" value="$(arg map_output_prefix)" />
+    <arg name="x" value="$(arg x)" />
+    <arg name="y" value="$(arg y)" />
+    <arg name="z" value="$(arg z)" />
+    <arg name="yaw" value="$(arg yaw)" />
+    <arg name="cmd_vel_max_linear_x" value="$(arg cmd_vel_max_linear_x)" />
+    <arg name="cmd_vel_max_linear_y" value="$(arg cmd_vel_max_linear_y)" />
+    <arg name="cmd_vel_max_angular_z" value="$(arg cmd_vel_max_angular_z)" />
+    <arg name="cmd_vel_max_linear_accel" value="$(arg cmd_vel_max_linear_accel)" />
+    <arg name="cmd_vel_max_angular_accel" value="$(arg cmd_vel_max_angular_accel)" />
+    <arg name="cmd_vel_timeout" value="$(arg cmd_vel_timeout)" />
+    <arg name="enable_cmd_vel_limiter" value="$(arg enable_cmd_vel_limiter)" />
+    <arg name="enable_depth_camera" value="$(arg enable_depth_camera)" />
+    <arg name="enable_laser_visualization" value="$(arg enable_laser_visualization)" />
+  </include>
+
+  <include
+    if="$(eval arg('robot') == 'zebrat')"
+    file="$(find zebrat)/launch/zebrat_legacy_with_world.launch">
+    <arg name="paused" value="$(arg paused)" />
+    <arg name="use_sim_time" value="$(arg use_sim_time)" />
+    <arg name="gui" value="$(arg gui)" />
+    <arg name="headless" value="$(arg headless)" />
+    <arg name="debug" value="$(arg debug)" />
+    <arg name="world_name" value="$(arg world_name)" />
+    <arg name="x" value="$(arg x)" />
+    <arg name="y" value="$(arg y)" />
+    <arg name="z" value="$(arg z)" />
+  </include>
+
+  <node
+    if="$(eval arg('robot') == 'r1')"
+    name="imu_compat_relay"
+    pkg="topic_tools"
+    type="relay"
+    args="imu/data imu"
+    output="screen" />
+
+  <node
+    if="$(eval arg('robot') == 'zebrat' and arg('rviz'))"
+    name="rviz"
+    pkg="rviz"
+    type="rviz"
+    args="-d $(find zebrat)/rviz/simulator.rviz"
+    output="screen">
+    <env name="DISABLE_ROS1_EOL_WARNINGS" value="1" />
+  </node>
+</launch>

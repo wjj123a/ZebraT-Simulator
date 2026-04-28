@@ -1,0 +1,120 @@
+world_profiles:
+  empty:
+    world: worlds/empty.world
+    dynamic_obstacles: false
+    spawn: {x: 0.0, y: 0.0, z: 0.02, yaw: 0.0}
+    map: {xmin: -8.0, ymin: -8.0, xmax: 8.0, ymax: 8.0, resolution: 0.05}
+    exploration_path:
+      - {x: 2.0, y: 0.0, yaw: 0.0}
+      - {x: 2.0, y: 2.0, yaw: 1.57}
+      - {x: -2.0, y: 2.0, yaw: 3.14}
+    regression_goals:
+      - {x: 3.0, y: 0.0, yaw: 0.0}
+      - {x: 0.0, y: 3.0, yaw: 1.57}
+  empty_wall:
+    world: worlds/empty_wall.world
+    dynamic_obstacles: false
+    spawn: {x: -2.0, y: 0.0, z: 0.02, yaw: 0.0}
+    map: {xmin: -8.0, ymin: -8.0, xmax: 8.0, ymax: 8.0, resolution: 0.05}
+    exploration_path:
+      - {x: -1.5, y: -2.0, yaw: -1.57}
+      - {x: -3.0, y: 2.0, yaw: 1.57}
+    regression_goals:
+      - {x: -3.5, y: 0.0, yaw: 3.14}
+      - {x: -1.5, y: -2.5, yaw: -1.57}
+  wall_right_angle:
+    world: worlds/wall_right_angle.world
+    dynamic_obstacles: false
+    spawn: {x: 1.0, y: 1.5, z: 0.02, yaw: 0.0}
+    map: {xmin: -2.0, ymin: -2.0, xmax: 5.0, ymax: 5.0, resolution: 0.05}
+    exploration_path:
+      - {x: 1.0, y: 0.3, yaw: -1.57}
+      - {x: 0.2, y: 2.4, yaw: 3.14}
+    regression_goals:
+      - {x: 1.8, y: 0.5, yaw: 0.0}
+      - {x: 0.4, y: 2.2, yaw: 3.14}
+  racecar:
+    world: worlds/racecar.world
+    dynamic_obstacles: false
+    spawn: {x: 0.0, y: 0.0, z: 0.02, yaw: 0.0}
+    map: {xmin: -8.0, ymin: -8.0, xmax: 8.0, ymax: 8.0, resolution: 0.05}
+    exploration_path:
+      - {x: 3.0, y: 0.0, yaw: 0.0}
+      - {x: 3.0, y: 2.0, yaw: 1.57}
+    regression_goals:
+      - {x: 4.0, y: 0.0, yaw: 0.0}
+      - {x: 0.0, y: 4.0, yaw: 1.57}
+  racecar_ar:
+    world: worlds/racecar_ar.world
+    dynamic_obstacles: false
+    spawn: {x: 0.0, y: -1.0, z: 0.02, yaw: 0.0}
+    map: {xmin: -8.0, ymin: -8.0, xmax: 8.0, ymax: 8.0, resolution: 0.05}
+    exploration_path:
+      - {x: 1.0, y: -0.5, yaw: 0.0}
+      - {x: 2.0, y: 1.0, yaw: 1.0}
+    regression_goals:
+      - {x: 1.5, y: 0.5, yaw: 0.5}
+  racecar_cones:
+    world: worlds/racecar_cones.world
+    dynamic_obstacles: false
+    spawn: {x: 0.0, y: -1.5, z: 0.02, yaw: 0.0}
+    map: {xmin: -8.0, ymin: -8.0, xmax: 10.0, ymax: 8.0, resolution: 0.05}
+    exploration_path:
+      - {x: 2.0, y: -1.5, yaw: 0.0}
+      - {x: 4.0, y: 1.5, yaw: 0.8}
+    regression_goals:
+      - {x: 5.5, y: 1.8, yaw: 0.8}
+  racecar_parking_1:
+    world: worlds/racecar_parking_1.world
+    dynamic_obstacles: false
+    spawn: {x: 1.8, y: -1.5, z: 0.02, yaw: 1.57}
+    map: {xmin: -8.0, ymin: -8.0, xmax: 8.0, ymax: 8.0, resolution: 0.05}
+    exploration_path:
+      - {x: 1.8, y: 1.0, yaw: 1.57}
+      - {x: -1.0, y: 1.0, yaw: 3.14}
+    regression_goals:
+      - {x: -0.5, y: 1.5, yaw: 3.14}
+  racecar_tunnel:
+    world: worlds/racecar_tunnel.world
+    dynamic_obstacles: false
+    spawn: {x: 0.0, y: 0.0, z: 0.02, yaw: 0.0}
+    map: {xmin: -10.0, ymin: -5.0, xmax: 20.0, ymax: 30.0, resolution: 0.05}
+    exploration_path:
+      - {x: 4.0, y: 0.0, yaw: 0.0}
+      - {x: 8.0, y: 10.0, yaw: 1.0}
+    regression_goals:
+      - {x: 6.0, y: 15.0, yaw: 1.57}
+  racecar_walker:
+    world: worlds/racecar_walker.world
+    dynamic_obstacles: true
+    spawn: {x: 0.0, y: 0.0, z: 0.02, yaw: 0.0}
+    map: {xmin: -10.0, ymin: -8.0, xmax: 10.0, ymax: 8.0, resolution: 0.05}
+    exploration_path:
+      - {x: 2.0, y: 0.0, yaw: 0.0}
+      - {x: -2.0, y: 2.0, yaw: 2.4}
+    regression_goals:
+      - {x: -3.0, y: 2.5, yaw: 3.14}
+  racetrack:
+    world: worlds/racetrack.world
+    dynamic_obstacles: false
+    spawn: {x: -9.0, y: -2.0, z: 0.02, yaw: 0.0}
+    map: {xmin: -16.0, ymin: -10.0, xmax: 22.0, ymax: 12.0, resolution: 0.05}
+    exploration_path:
+      - {x: -4.0, y: -2.0, yaw: 0.0}
+      - {x: 4.0, y: 0.0, yaw: 0.3}
+      - {x: 12.0, y: 1.0, yaw: 0.0}
+    regression_goals:
+      - {x: 5.0, y: 0.0, yaw: 0.0}
+      - {x: 14.0, y: 1.0, yaw: 0.0}
+  area:
+    world: worlds/area.world
+    dynamic_obstacles: true
+    spawn: {x: 0.0, y: 0.0, z: 0.02, yaw: 0.0}
+    map: {xmin: -40.0, ymin: -40.0, xmax: 40.0, ymax: 40.0, resolution: 0.10}
+    exploration_path:
+      - {x: 5.0, y: 0.0, yaw: 0.0}
+      - {x: 10.0, y: 5.0, yaw: 0.5}
+      - {x: 0.0, y: 10.0, yaw: 1.57}
+    regression_goals:
+      - {x: 8.0, y: 8.0, yaw: 0.78}
+      - {x: -6.0, y: 4.0, yaw: 3.14}

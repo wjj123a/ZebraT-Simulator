@@ -1,0 +1,212 @@
+<?xml version="1.0"?>
+<launch>
+  <env name="GAZEBO_MODEL_PATH" value="$(find zebrat)/..:$(find zebrat)/gazebo_models:$(optenv GAZEBO_MODEL_PATH)" />
+
+  <arg name="world_name" default="$(find zebrat)/worlds/area.world"/>
+  <arg
+    name="world_profile"
+    default="$(eval 'empty_wall' if 'empty_wall.world' in arg('world_name') else 'empty' if 'empty.world' in arg('world_name') else 'wall_right_angle' if 'wall_right_angle.world' in arg('world_name') else 'racecar_cones' if 'racecar_cones.world' in arg('world_name') else 'racecar_parking_1' if 'racecar_parking_1.world' in arg('world_name') else 'racecar_tunnel' if 'racecar_tunnel.world' in arg('world_name') else 'racecar_walker' if 'racecar_walker.world' in arg('world_name') else 'racecar_ar' if 'racecar_ar.world' in arg('world_name') else 'racecar' if 'racecar.world' in arg('world_name') else 'racetrack' if 'racetrack.world' in arg('world_name') else 'area' if 'area.world' in arg('world_name') else 'custom')"/>
+  <arg name="gui" default="true"/>
+  <arg name="paused" default="false"/>
+  <arg name="auto_unpause" default="true"/>
+  <arg name="use_sim_time" default="true"/>
+  <arg name="physics" default="ode"/>
+  <arg name="verbose" default="false"/>
+  <arg name="rviz" default="true"/>
+  <arg name="rviz_config" default="$(find zebrat)/rviz/navigation.rviz"/>
+  <arg name="enable_navigation" default="true"/>
+  <arg name="enable_move_base" default="true"/>
+  <arg name="enable_dynamic_obstacles" default="false"/>
+  <arg name="dynamic_obstacle_profile" default="area_mixed"/>
+  <arg name="dynamic_obstacle_speed_scale" default="1.0"/>
+  <arg name="navigation_backend" default="gmapping"/>
+  <arg name="navigation_mode" default="map"/>
+  <arg name="map_file" default="$(find zebrat)/maps/area.yaml"/>
+  <arg name="save_map" default="false"/>
+  <arg name="map_output_prefix" default="$(find zebrat)/maps/$(arg world_profile)"/>
+  <arg name="gmapping_xmin" default="$(eval -8.0 if arg('world_profile') in ['empty', 'empty_wall', 'racecar', 'racecar_ar', 'racecar_parking_1'] else -2.0 if arg('world_profile') == 'wall_right_angle' else -8.0 if arg('world_profile') == 'racecar_cones' else -10.0 if arg('world_profile') == 'racecar_tunnel' else -10.0 if arg('world_profile') == 'racecar_walker' else -16.0 if arg('world_profile') == 'racetrack' else -40.0 if arg('world_profile') == 'area' else -20.0)"/>
+  <arg name="gmapping_ymin" default="$(eval -8.0 if arg('world_profile') in ['empty', 'empty_wall', 'racecar', 'racecar_ar', 'racecar_parking_1'] else -2.0 if arg('world_profile') == 'wall_right_angle' else -8.0 if arg('world_profile') == 'racecar_cones' else -5.0 if arg('world_profile') == 'racecar_tunnel' else -8.0 if arg('world_profile') == 'racecar_walker' else -10.0 if arg('world_profile') == 'racetrack' else -40.0 if arg('world_profile') == 'area' else -20.0)"/>
+  <arg name="gmapping_xmax" default="$(eval 8.0 if arg('world_profile') in ['empty', 'empty_wall', 'racecar', 'racecar_ar', 'racecar_parking_1'] else 5.0 if arg('world_profile') == 'wall_right_angle' else 10.0 if arg('world_profile') == 'racecar_cones' else 20.0 if arg('world_profile') == 'racecar_tunnel' else 10.0 if arg('world_profile') == 'racecar_walker' else 22.0 if arg('world_profile') == 'racetrack' else 40.0 if arg('world_profile') == 'area' else 20.0)"/>
+  <arg name="gmapping_ymax" default="$(eval 8.0 if arg('world_profile') in ['empty', 'empty_wall', 'racecar', 'racecar_ar', 'racecar_parking_1'] else 5.0 if arg('world_profile') == 'wall_right_angle' else 8.0 if arg('world_profile') == 'racecar_cones' else 30.0 if arg('world_profile') == 'racecar_tunnel' else 8.0 if arg('world_profile') == 'racecar_walker' else 12.0 if arg('world_profile') == 'racetrack' else 40.0 if arg('world_profile') == 'area' else 20.0)"/>
+  <arg name="gmapping_delta" default="$(eval 0.10 if arg('world_profile') == 'area' else 0.05)"/>
+  <arg name="x" default="$(eval 0.0 if arg('world_profile') in ['empty', 'racecar', 'area', 'custom'] else -2.0 if arg('world_profile') == 'empty_wall' else 1.0 if arg('world_profile') == 'wall_right_angle' else 0.0 if arg('world_profile') == 'racecar_ar' else 0.0 if arg('world_profile') == 'racecar_cones' else 1.8 if arg('world_profile') == 'racecar_parking_1' else 0.0 if arg('world_profile') == 'racecar_tunnel' else 0.0 if arg('world_profile') == 'racecar_walker' else -9.0 if arg('world_profile') == 'racetrack' else 0.0)"/>
+  <arg name="y" default="$(eval 0.0 if arg('world_profile') in ['empty', 'racecar', 'area', 'custom'] else 0.0 if arg('world_profile') == 'empty_wall' else 1.5 if arg('world_profile') == 'wall_right_angle' else -1.0 if arg('world_profile') == 'racecar_ar' else -1.5 if arg('world_profile') == 'racecar_cones' else -1.5 if arg('world_profile') == 'racecar_parking_1' else 0.0 if arg('world_profile') == 'racecar_tunnel' else 0.0 if arg('world_profile') == 'racecar_walker' else -2.0 if arg('world_profile') == 'racetrack' else 0.0)"/>
+  <arg name="z" default="0.02"/>
+  <arg name="yaw" default="$(eval 0.0 if arg('world_profile') not in ['racecar_parking_1'] else 1.57)"/>
+  <arg name="cmd_vel_max_linear_x" default="0.22"/>
+  <arg name="cmd_vel_max_linear_y" default="0.0"/>
+  <arg name="cmd_vel_max_angular_z" default="0.50"/>
+  <arg name="cmd_vel_max_linear_accel" default="0.40"/>
+  <arg name="cmd_vel_max_angular_accel" default="0.80"/>
+  <arg name="cmd_vel_timeout" default="0.40"/>
+  <arg name="enable_cmd_vel_limiter" default="false"/>
+  <arg name="enable_depth_camera" default="false"/>
+  <arg name="enable_laser_visualization" default="false"/>
+
+  <rosparam command="load" file="$(find zebrat)/config/world_profiles.yaml" />
+
+  <include file="$(find gazebo_ros)/launch/empty_world.launch">
+    <arg name="world_name" value="$(arg world_name)" />
+    <arg name="gui" value="$(arg gui)" />
+    <arg name="paused" value="$(arg paused)" />
+    <arg name="use_sim_time" value="$(arg use_sim_time)" />
+    <arg name="physics" value="$(arg physics)" />
+    <arg name="verbose" value="$(arg verbose)" />
+  </include>
+
+  <node
+    if="$(arg auto_unpause)"
+    name="gazebo_auto_unpause"
+    pkg="zebrat"
+    type="gazebo_auto_unpause.py"
+    output="screen">
+    <param name="keep_unpaused" value="true" />
+    <param name="check_period" value="1.0" />
+  </node>
+
+  <param name="robot_description" textfile="$(find zebrat)/urdf/R1_rviz.urdf" />
+  <param name="robot_description_gazebo" textfile="$(find zebrat)/urdf/R1.urdf" />
+
+  <node
+    name="joint_state_publisher"
+    pkg="joint_state_publisher"
+    type="joint_state_publisher" />
+
+  <node
+    name="robot_state_publisher"
+    pkg="robot_state_publisher"
+    type="robot_state_publisher" />
+
+  <node
+    name="cmd_vel_arbiter"
+    pkg="zebrat"
+    type="cmd_vel_arbiter.py"
+    output="screen">
+    <param name="nav_topic" value="/cmd_vel_nav" />
+    <param name="teleop_topic" value="/cmd_vel_teleop" />
+    <param name="output_topic" value="/cmd_vel" />
+    <param name="nav_timeout" value="$(arg cmd_vel_timeout)" />
+    <param name="teleop_timeout" value="0.75" />
+  </node>
+
+  <node
+    name="urdf_spawner"
+    pkg="gazebo_ros"
+    type="spawn_model"
+    respawn="false"
+    output="screen"
+    args="-urdf -model r1 -param robot_description_gazebo -x $(arg x) -y $(arg y) -z $(arg z) -Y $(arg yaw)" />
+
+  <include
+    if="$(arg enable_dynamic_obstacles)"
+    file="$(find zebrat)/launch/r1_dynamic_obstacles.launch">
+    <arg name="profile" value="$(arg dynamic_obstacle_profile)" />
+    <arg name="speed_scale" value="$(arg dynamic_obstacle_speed_scale)" />
+  </include>
+
+  <node
+    if="$(arg rviz)"
+    name="rviz"
+    pkg="rviz"
+    type="rviz"
+    args="-d $(arg rviz_config)"
+    output="screen">
+    <env name="DISABLE_ROS1_EOL_WARNINGS" value="1" />
+  </node>
+
+  <group if="$(arg enable_navigation)">
+    <group if="$(eval arg('navigation_mode') == 'map')">
+      <node
+        name="map_server"
+        pkg="map_server"
+        type="map_server"
+        args="$(arg map_file)"
+        output="screen" />
+
+      <rosparam command="load" file="$(find zebrat)/config/navigation_amcl.yaml" ns="amcl" />
+      <param name="amcl/initial_pose_x" value="$(arg x)" />
+      <param name="amcl/initial_pose_y" value="$(arg y)" />
+      <param name="amcl/initial_pose_a" value="$(arg yaw)" />
+
+      <node
+        name="amcl"
+        pkg="amcl"
+        type="amcl"
+        output="screen">
+        <remap from="scan" to="/scan" />
+      </node>
+
+      <node
+        name="initial_pose_publisher"
+        pkg="zebrat"
+        type="publish_initial_pose.py"
+        output="screen">
+        <param name="x" value="$(arg x)" />
+        <param name="y" value="$(arg y)" />
+        <param name="yaw" value="$(arg yaw)" />
+      </node>
+    </group>
+
+    <group if="$(eval arg('navigation_mode') == 'slam')">
+      <group if="$(eval arg('navigation_backend') == 'gmapping')">
+        <node
+          name="slam_gmapping"
+          pkg="gmapping"
+          type="slam_gmapping"
+          output="screen">
+          <param name="base_frame" value="base_footprint" />
+          <param name="odom_frame" value="odom" />
+          <param name="map_update_interval" value="2.0" />
+          <param name="xmin" value="$(arg gmapping_xmin)" />
+          <param name="ymin" value="$(arg gmapping_ymin)" />
+          <param name="xmax" value="$(arg gmapping_xmax)" />
+          <param name="ymax" value="$(arg gmapping_ymax)" />
+          <param name="delta" value="$(arg gmapping_delta)" />
+          <remap from="scan" to="/scan" />
+        </node>
+      </group>
+
+      <group if="$(eval arg('navigation_backend') == 'rtabmap')">
+        <include file="$(find zebrat)/launch/r1_rtabmap_slam.launch">
+          <arg name="world_profile" value="$(arg world_profile)" />
+          <arg name="use_sim_time" value="$(arg use_sim_time)" />
+        </include>
+      </group>
+
+      <node
+        if="$(arg save_map)"
+        name="save_map_snapshot"
+        pkg="zebrat"
+        type="save_map_snapshot.py"
+        output="screen">
+        <param name="map_topic" value="/map" />
+        <param name="output_prefix" value="$(arg map_output_prefix)" />
+        <param name="idle_duration" value="12.0" />
+        <param name="min_known_cells" value="200" />
+      </node>
+    </group>
+
+    <group if="$(arg enable_move_base)">
+      <rosparam command="load" file="$(find zebrat)/config/navigation_common.yaml" ns="move_base" />
+      <rosparam command="load" file="$(find zebrat)/config/navigation_global_costmap.yaml" ns="move_base" />
+      <rosparam command="load" file="$(find zebrat)/config/navigation_local_costmap.yaml" ns="move_base" />
+      <rosparam command="load" file="$(find zebrat)/config/navigation_move_base.yaml" ns="move_base" />
+      <rosparam command="load" file="$(find zebrat)/config/navigation_dwa.yaml" ns="move_base" />
+
+      <param name="move_base/DWAPlannerROS/max_vel_x" value="$(arg cmd_vel_max_linear_x)" />
+      <param name="move_base/DWAPlannerROS/max_vel_trans" value="$(arg cmd_vel_max_linear_x)" />
+      <param name="move_base/DWAPlannerROS/max_vel_theta" value="$(arg cmd_vel_max_angular_z)" />
+      <param name="move_base/DWAPlannerROS/acc_lim_x" value="$(arg cmd_vel_max_linear_accel)" />
+      <param name="move_base/DWAPlannerROS/acc_lim_trans" value="$(arg cmd_vel_max_linear_accel)" />
+      <param name="move_base/DWAPlannerROS/acc_lim_theta" value="$(arg cmd_vel_max_angular_accel)" />
+
+      <node
+        name="move_base"
+        pkg="move_base"
+        type="move_base"
+        output="screen">
+        <remap from="cmd_vel" to="/cmd_vel_nav" />
+      </node>
+    </group>
+  </group>
+</launch>

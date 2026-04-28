@@ -1,0 +1,33 @@
+exploration_goals:
+  - {name: east_corridor, x: 5.0, y: 0.0, yaw: 0.0, timeout: 70.0}
+  - {name: northeast_plaza, x: 10.0, y: 5.0, yaw: 0.4, timeout: 90.0}
+  - {name: north_square, x: 0.0, y: 10.0, yaw: 1.57, timeout: 90.0}
+  - {name: northwest_lane, x: -6.0, y: 6.0, yaw: 2.4, timeout: 90.0}
+  - {name: west_return, x: -6.0, y: 0.0, yaw: 3.14, timeout: 80.0}
+  - {name: south_return, x: 0.0, y: -4.0, yaw: -1.57, timeout: 80.0}
+  - {name: home, x: 0.0, y: 0.0, yaw: 0.0, timeout: 70.0}
+regression_goals:
+  - {name: open_short, x: 4.0, y: 0.0, yaw: 0.0, timeout: 60.0}
+  - {name: east_arc, x: 7.0, y: 2.5, yaw: 0.5, timeout: 65.0}
+  - {name: northeast_plaza, x: 9.5, y: 5.0, yaw: 0.8, timeout: 75.0}
+  - {name: north_upperlane, x: 2.75, y: 7.20, yaw: 2.8, timeout: 110.0}
+  - {name: north_upperhub, x: 2.85, y: 7.35, yaw: 2.8, timeout: 60.0}
+  - {name: northwest_lane, x: -2.0, y: 8.1, yaw: 3.00, timeout: 90.0, allow_blocked: true, stop_on_blocked: true}
+northwest_probe_current_goals:
+  - {name: northwest_lane_current, x: -2.0, y: 7.5, yaw: 3.14, timeout: 70.0, allow_blocked: true, stop_on_blocked: true}
+northwest_probe_freecell_goals:
+  - {name: northwest_lane_freecell, x: -2.0, y: 8.1, yaw: 3.00, timeout: 70.0, allow_blocked: true, stop_on_blocked: true}
+northwest_probe_centerline_goals:
+  - {name: northwest_lane_centerline, x: -2.6, y: 7.7, yaw: 3.00, timeout: 70.0, allow_blocked: true, stop_on_blocked: true}
+return_mid_probe_current_goals:
+  - {name: return_mid_current, x: 2.0, y: 4.0, yaw: 2.8, timeout: 120.0, allow_blocked: true, stop_on_blocked: true}
+return_mid_probe_midfree_goals:
+  - {name: return_mid_midfree, x: 2.4, y: 4.5, yaw: 2.8, timeout: 80.0, allow_blocked: true, stop_on_blocked: true}
+return_mid_probe_northfree_goals:
+  - {name: return_mid_northfree, x: 2.5, y: 5.5, yaw: 2.8, timeout: 80.0, allow_blocked: true, stop_on_blocked: true}
+return_mid_probe_upperlane_goals:
+  - {name: return_mid_upperlane, x: 2.75, y: 7.20, yaw: 2.8, timeout: 110.0, allow_blocked: true, stop_on_blocked: true}
+return_mid_probe_upperhub_goals:
+  - {name: return_mid_upperhub, x: 2.85, y: 7.35, yaw: 2.8, timeout: 90.0, allow_blocked: true, stop_on_blocked: true}
+north_edge_probe_free_goals:
+  - {name: north_edge_free, x: -1.05, y: 8.35, yaw: 3.0, timeout: 90.0, allow_blocked: true, stop_on_blocked: true}

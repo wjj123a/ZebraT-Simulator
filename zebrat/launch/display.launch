@@ -1,0 +1,40 @@
+<launch>
+  <arg name="robot" default="r1" />
+  <arg name="use_joint_state_gui" default="false" />
+  <arg name="rviz_config" default="$(find zebrat)/rviz/simulator.rviz" />
+
+  <param
+    if="$(eval arg('robot') == 'r1')"
+    name="robot_description"
+    textfile="$(find zebrat)/urdf/R1_rviz.urdf" />
+
+  <param
+    if="$(eval arg('robot') == 'zebrat')"
+    name="robot_description"
+    command="$(find xacro)/xacro '$(find zebrat)/urdf/zebrat.urdf.xacro' enable_velodyne:=false use_planar_drive:=true" />
+
+  <node
+    if="$(arg use_joint_state_gui)"
+    name="joint_state_publisher_gui"
+    pkg="joint_state_publisher_gui"
+    type="joint_state_publisher_gui" />
+
+  <node
+    unless="$(arg use_joint_state_gui)"
+    name="joint_state_publisher"
+    pkg="joint_state_publisher"
+    type="joint_state_publisher" />
+
+  <node
+    name="robot_state_publisher"
+    pkg="robot_state_publisher"
+    type="robot_state_publisher" />
+
+  <node
+    name="rviz"
+    pkg="rviz"
+    type="rviz"
+    args="-d $(arg rviz_config)">
+    <env name="DISABLE_ROS1_EOL_WARNINGS" value="1" />
+  </node>
+</launch>

@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<launch>
+  <arg name="profile" default="area_mixed" />
+  <arg name="speed_scale" default="1.0" />
+  <arg name="config_file" default="$(find zebrat)/config/dynamic_obstacles_area.yaml" />
+
+  <node
+    name="dynamic_obstacles"
+    pkg="zebrat"
+    type="dynamic_obstacles.py"
+    output="screen">
+    <rosparam command="load" file="$(arg config_file)" />
+    <param name="profile" value="$(arg profile)" />
+    <param name="speed_scale" value="$(arg speed_scale)" />
+  </node>
+</launch>

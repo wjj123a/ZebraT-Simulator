@@ -1,0 +1,31 @@
+shutdown_costmaps: false
+controller_frequency: 8.0
+planner_frequency: 1.0
+planner_patience: 5.0
+controller_patience: 6.0
+oscillation_timeout: 6.0
+oscillation_distance: 0.20
+recovery_behavior_enabled: true
+clearing_rotation_allowed: true
+max_planning_retries: 3
+base_global_planner: global_planner/GlobalPlanner
+base_local_planner: dwa_local_planner/DWAPlannerROS
+recovery_behaviors:
+  - {name: conservative_reset, type: clear_costmap_recovery/ClearCostmapRecovery}
+  - {name: rotate_recovery, type: rotate_recovery/RotateRecovery}
+  - {name: aggressive_reset, type: clear_costmap_recovery/ClearCostmapRecovery}
+conservative_reset:
+  reset_distance: 1.5
+aggressive_reset:
+  reset_distance: 3.0
+GlobalPlanner:
+  allow_unknown: true
+  default_tolerance: 0.25
+  use_dijkstra: true
+  use_quadratic: true
+  use_grid_path: false
+  old_navfn_behavior: false
+  lethal_cost: 253
+  neutral_cost: 66
+  cost_factor: 0.55
+  publish_potential: false

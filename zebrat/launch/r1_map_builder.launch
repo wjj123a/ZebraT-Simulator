@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<launch>
+  <arg name="world_name" default="$(find zebrat)/worlds/area.world" />
+  <arg name="navigation_backend" default="gmapping" />
+  <arg name="map_output_prefix" default="$(find zebrat)/maps/area" />
+
+  <include file="$(find zebrat)/launch/zebrat_with_world.launch">
+    <arg name="robot" value="r1" />
+    <arg name="world_name" value="$(arg world_name)" />
+    <arg name="navigation_backend" value="$(arg navigation_backend)" />
+    <arg name="navigation_mode" value="slam" />
+    <arg name="gui" value="false" />
+    <arg name="rviz" value="false" />
+    <arg name="enable_navigation" value="true" />
+    <arg name="enable_move_base" value="false" />
+    <arg name="save_map" value="true" />
+    <arg name="map_output_prefix" value="$(arg map_output_prefix)" />
+  </include>
+
+  <node
+    name="explore_waypoints"
+    pkg="zebrat"
+    type="explore_waypoints.py"
+    output="screen">
+    <rosparam command="load" file="$(find zebrat)/config/navigation_goals_area.yaml" />
+    <param name="goal_set" value="exploration" />
+  </node>
+</launch>

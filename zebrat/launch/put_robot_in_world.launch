@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<launch>
+
+    <arg name="x" default="-1.5" />
+    <arg name="y" default="0.6" />
+    <arg name="z" default="0.0" />
+    <arg name="roll" default="0.0"/>
+    <arg name="pitch" default="0.0"/>
+    <arg name="yaw" default="1.5708"/>
+    <arg name="robot_name" default="zebrat"/>
+    <arg name="enable_velodyne" default="false"/>
+    <arg name="use_planar_drive" default="true"/>
+    <!-- 加载机器人模型描述参数 -->
+    <param name="robot_description"
+           command="$(find xacro)/xacro '$(find zebrat)/urdf/zebrat.urdf.xacro' enable_velodyne:=$(arg enable_velodyne) use_planar_drive:=$(arg use_planar_drive)"/>
+
+
+    <!--运行joint_state_publisher节点，发布机器人关节状态-->
+    <!--<node name = "robot_state_publisher" pkg = "robot_state_publisher" type = "state_publisher">-->
+    <node name= "robot_state_publisher" pkg= "robot_state_publisher" type= "robot_state_publisher">
+	<param name="publish_frequency" type="double" value="30.0" />
+    </node>
+    <!--<node name="tf_footprint_base" pkg="tf" type="static_transform_publisher" args="0 0 0 0 0 0 base_link base_footprint 40" />-->
+    <!-- 在gazebo中加载机器人模型-->
+    <node name="urdf_spawner" pkg="gazebo_ros" type="spawn_model" respawn="false" output="screen"
+          args="-urdf -model $(arg robot_name) -param robot_description -x $(arg x ) -y $(arg y) -z $(arg z) -R $(arg roll) -P $(arg pitch) -Y $(arg yaw)"/> 
+</launch>
