@@ -58,6 +58,30 @@ ensure_repo_package_link() {
 reset_generated_workspace_if_moved
 ensure_repo_package_link "zebrat" "$ROOT_DIR/zebrat"
 
+required_ros_packages=(
+  ackermann_msgs
+  controller_manager
+  effort_controllers
+  gazebo_ros_control
+  joint_state_controller
+  position_controllers
+  velocity_controllers
+)
+
+missing_ros_packages=()
+for dependency in "${required_ros_packages[@]}"; do
+  if ! rospack find "$dependency" >/dev/null 2>&1; then
+    missing_ros_packages+=("$dependency")
+  fi
+done
+
+if [ "${#missing_ros_packages[@]}" -gt 0 ]; then
+  echo "Missing required ROS packages: ${missing_ros_packages[*]}" >&2
+  echo "Install them with:" >&2
+  echo "  sudo apt-get install ros-noetic-ackermann-msgs ros-noetic-effort-controllers ros-noetic-gazebo-ros-control ros-noetic-joint-state-controller ros-noetic-position-controllers ros-noetic-velocity-controllers" >&2
+  exit 1
+fi
+
 launch_robot="r1"
 launch_navigation="true"
 launch_world="$ROOT_DIR/zebrat/worlds/area.world"

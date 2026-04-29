@@ -6,13 +6,22 @@ exploration_goals:
   - {name: west_return, x: -6.0, y: 0.0, yaw: 3.14, timeout: 80.0}
   - {name: south_return, x: 0.0, y: -4.0, yaw: -1.57, timeout: 80.0}
   - {name: home, x: 0.0, y: 0.0, yaw: 0.0, timeout: 70.0}
-regression_goals:
+legacy_regression_goals:
   - {name: open_short, x: 4.0, y: 0.0, yaw: 0.0, timeout: 60.0}
   - {name: east_arc, x: 7.0, y: 2.5, yaw: 0.5, timeout: 65.0}
   - {name: northeast_plaza, x: 9.5, y: 5.0, yaw: 0.8, timeout: 75.0}
   - {name: north_upperlane, x: 2.75, y: 7.20, yaw: 2.8, timeout: 110.0}
   - {name: north_upperhub, x: 2.85, y: 7.35, yaw: 2.8, timeout: 60.0}
   - {name: northwest_lane, x: -2.0, y: 8.1, yaw: 3.00, timeout: 90.0, allow_blocked: true, stop_on_blocked: true}
+regression_goals:
+  - {name: lower_east_entry, x: 3.45, y: -1.65, yaw: 0.0, timeout: 45.0}
+  - {name: lower_east_mid, x: 5.25, y: -1.55, yaw: 0.05, timeout: 55.0}
+  - {name: lower_east_exit, x: 7.00, y: -1.40, yaw: 0.15, timeout: 60.0}
+  - {name: turn_north_entry, x: 8.25, y: -0.55, yaw: 0.65, timeout: 70.0}
+  - {name: east_arc, x: 8.75, y: 1.35, yaw: 1.35, timeout: 80.0}
+  - {name: north_climb_low, x: 8.70, y: 2.10, yaw: 1.40, timeout: 45.0}
+  - {name: north_climb_mid, x: 8.75, y: 2.80, yaw: 1.40, timeout: 45.0}
+  - {name: northeast_plaza_entry, x: 8.90, y: 3.60, yaw: 1.25, timeout: 60.0}
 northwest_probe_current_goals:
   - {name: northwest_lane_current, x: -2.0, y: 7.5, yaw: 3.14, timeout: 70.0, allow_blocked: true, stop_on_blocked: true}
 northwest_probe_freecell_goals:
@@ -34,4 +43,4 @@ north_edge_probe_free_goals:
 dynamic_goal_path_probe_goals:
   - {name: pedestrian_route_goal, x: 2.75, y: 0.0, yaw: 0.0, timeout: 90.0, allow_blocked: true, stop_on_blocked: true}
 dynamic_goal_path_safe_goals:
-  - {name: pedestrian_route_goal_offset, x: 3.45, y: 0.0, yaw: 0.0, timeout: 90.0}
+  - {name: pedestrian_route_goal_offset, x: 3.05, y: -1.65, yaw: 0.0, timeout: 45.0}

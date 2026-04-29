@@ -8,6 +8,7 @@ project(zebrat)
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
+  ackermann_msgs
   gazebo_msgs
   geometry_msgs
   nav_msgs
@@ -112,7 +113,7 @@ find_package(catkin REQUIRED COMPONENTS
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES zebrat
-  CATKIN_DEPENDS gazebo_msgs geometry_msgs nav_msgs roscpp rospy sensor_msgs std_msgs std_srvs tf tf2_ros
+  CATKIN_DEPENDS ackermann_msgs gazebo_msgs geometry_msgs nav_msgs roscpp rospy sensor_msgs std_msgs std_srvs tf tf2_ros
 #  DEPENDS system_lib
 )
 
@@ -167,6 +168,8 @@ include_directories(
 ## Mark executable scripts (Python etc.) for installation
 ## in contrast to setup.py, you can choose the destination
 catkin_install_python(PROGRAMS
+  scripts/ackermann_cmd_arbiter.py
+  scripts/ackermann_cmd_safety_supervisor.py
   scripts/cmd_vel_arbiter.py
   scripts/cmd_vel_safety_supervisor.py
   scripts/dynamic_obstacles.py
@@ -174,15 +177,18 @@ catkin_install_python(PROGRAMS
   scripts/gazebo_auto_unpause.py
   scripts/generate_local_gazebo_models.py
   scripts/gazebo_odometry.py
+  scripts/keyboard_ackermann_teleop.py
   scripts/keyboard_teleop.py
   scripts/nav_sim.py
   scripts/navigation_regression.py
   scripts/odom_pub.py
   scripts/publish_initial_pose.py
+  scripts/r1_ackermann_controller.py
   scripts/safe_goal_relay.py
   scripts/pose_pub.py
   scripts/save_map_snapshot.py
   scripts/servo_commands.py
+  scripts/twist_to_ackermann.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 

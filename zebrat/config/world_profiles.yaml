@@ -109,7 +109,7 @@ world_profiles:
   area:
     world: worlds/area.world
     dynamic_obstacles: true
-    spawn: {x: 0.0, y: 0.0, z: 0.02, yaw: 0.0}
+    spawn: {x: 1.95, y: -1.65, z: 0.02, yaw: 0.0}
     map: {xmin: -40.0, ymin: -40.0, xmax: 40.0, ymax: 40.0, resolution: 0.10}
     exploration_path:
       - {x: 5.0, y: 0.0, yaw: 0.0}

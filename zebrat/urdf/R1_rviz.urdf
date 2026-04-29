@@ -35,9 +35,13 @@
     </visual>
   </link>
 
+  <link name="front_left_steering_link" />
+
+  <link name="front_right_steering_link" />
+
   <link name="Empty_Link1">
     <visual>
-      <origin xyz="0 0.0175 0" rpy="1.57079632679 0 0" />
+      <origin xyz="0 0 0" rpy="1.57079632679 0 0" />
       <geometry>
         <cylinder radius="0.04075" length="0.040" />
       </geometry>
@@ -45,16 +49,24 @@
     </visual>
   </link>
 
-  <joint name="J1" type="continuous">
-    <origin xyz="0.220127909860013 0.142085316479216 0.0" rpy="0 0 0" />
+  <joint name="front_left_steering_joint" type="revolute">
+    <origin xyz="0.220127909860013 0.142085316479216 0.04075" rpy="0 0 0" />
     <parent link="base_link" />
+    <child link="front_left_steering_link" />
+    <axis xyz="0 0 1" />
+    <limit lower="-0.6" upper="0.6" effort="30" velocity="4" />
+  </joint>
+
+  <joint name="front_left_wheel_joint" type="continuous">
+    <origin xyz="0 0 -0.04075" rpy="0 0 0" />
+    <parent link="front_left_steering_link" />
     <child link="Empty_Link1" />
     <axis xyz="0 1 0" />
   </joint>
 
   <link name="Empty_Link2">
     <visual>
-      <origin xyz="0 0.0020 0" rpy="1.57079632679 0 0" />
+      <origin xyz="0 0 0" rpy="1.57079632679 0 0" />
       <geometry>
         <cylinder radius="0.04075" length="0.040" />
       </geometry>
@@ -62,9 +74,17 @@
     </visual>
   </link>
 
-  <joint name="J2" type="continuous">
-    <origin xyz="0.220127909860013 -0.122535316479216 0.0" rpy="0 0 0" />
+  <joint name="front_right_steering_joint" type="revolute">
+    <origin xyz="0.220127909860013 -0.122535316479216 0.04075" rpy="0 0 0" />
     <parent link="base_link" />
+    <child link="front_right_steering_link" />
+    <axis xyz="0 0 1" />
+    <limit lower="-0.6" upper="0.6" effort="30" velocity="4" />
+  </joint>
+
+  <joint name="front_right_wheel_joint" type="continuous">
+    <origin xyz="0 0 -0.04075" rpy="0 0 0" />
+    <parent link="front_right_steering_link" />
     <child link="Empty_Link2" />
     <axis xyz="0 -1 0" />
   </joint>
@@ -79,7 +99,7 @@
     </visual>
   </link>
 
-  <joint name="J3" type="continuous">
+  <joint name="rear_right_wheel_joint" type="continuous">
     <origin xyz="-0.19879978611665 -0.122535316479219 0.0" rpy="0 0 0" />
     <parent link="base_link" />
     <child link="Empty_Link3" />
@@ -96,7 +116,7 @@
     </visual>
   </link>
 
-  <joint name="J4" type="continuous">
+  <joint name="rear_left_wheel_joint" type="continuous">
     <origin xyz="-0.19879978611665 0.119285316479219 0.0" rpy="0 0 0" />
     <parent link="base_link" />
     <child link="Empty_Link4" />

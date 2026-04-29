@@ -15,4 +15,4 @@ if [ -f "$ROOT_DIR/devel/setup.bash" ]; then
   source "$ROOT_DIR/devel/setup.bash"
 fi
 
-exec rosrun zebrat keyboard_teleop.py _output_topic:=/cmd_vel_teleop "$@"
+exec rosrun zebrat keyboard_ackermann_teleop.py _output_topic:=/ackermann_cmd_teleop "$@"

@@ -42,22 +42,25 @@
   <arg name="gmapping_xmax" default="$(eval 8.0 if arg('world_profile') in ['empty', 'empty_wall', 'racecar', 'racecar_ar', 'racecar_parking_1'] else 5.0 if arg('world_profile') == 'wall_right_angle' else 10.0 if arg('world_profile') == 'racecar_cones' else 20.0 if arg('world_profile') == 'racecar_tunnel' else 10.0 if arg('world_profile') == 'racecar_walker' else 22.0 if arg('world_profile') == 'racetrack' else 40.0 if arg('world_profile') == 'area' else 20.0)"/>
   <arg name="gmapping_ymax" default="$(eval 8.0 if arg('world_profile') in ['empty', 'empty_wall', 'racecar', 'racecar_ar', 'racecar_parking_1'] else 5.0 if arg('world_profile') == 'wall_right_angle' else 8.0 if arg('world_profile') == 'racecar_cones' else 30.0 if arg('world_profile') == 'racecar_tunnel' else 8.0 if arg('world_profile') == 'racecar_walker' else 12.0 if arg('world_profile') == 'racetrack' else 40.0 if arg('world_profile') == 'area' else 20.0)"/>
   <arg name="gmapping_delta" default="$(eval 0.10 if arg('world_profile') == 'area' else 0.05)"/>
-  <arg name="x" default="$(eval 0.0 if arg('world_profile') in ['empty', 'racecar', 'area', 'custom'] else -2.0 if arg('world_profile') == 'empty_wall' else 1.0 if arg('world_profile') == 'wall_right_angle' else 0.0 if arg('world_profile') == 'racecar_ar' else 0.0 if arg('world_profile') == 'racecar_cones' else 1.8 if arg('world_profile') == 'racecar_parking_1' else 0.0 if arg('world_profile') == 'racecar_tunnel' else 0.0 if arg('world_profile') == 'racecar_walker' else -9.0 if arg('world_profile') == 'racetrack' else 0.0)"/>
-  <arg name="y" default="$(eval 0.0 if arg('world_profile') in ['empty', 'racecar', 'area', 'custom'] else 0.0 if arg('world_profile') == 'empty_wall' else 1.5 if arg('world_profile') == 'wall_right_angle' else -1.0 if arg('world_profile') == 'racecar_ar' else -1.5 if arg('world_profile') == 'racecar_cones' else -1.5 if arg('world_profile') == 'racecar_parking_1' else 0.0 if arg('world_profile') == 'racecar_tunnel' else 0.0 if arg('world_profile') == 'racecar_walker' else -2.0 if arg('world_profile') == 'racetrack' else 0.0)"/>
-  <arg name="z" default="0.02"/>
+  <arg name="x" default="$(eval 0.0 if arg('world_profile') in ['empty', 'racecar', 'custom'] else 1.95 if arg('world_profile') == 'area' else -2.0 if arg('world_profile') == 'empty_wall' else 1.0 if arg('world_profile') == 'wall_right_angle' else 0.0 if arg('world_profile') == 'racecar_ar' else 0.0 if arg('world_profile') == 'racecar_cones' else 1.8 if arg('world_profile') == 'racecar_parking_1' else 0.0 if arg('world_profile') == 'racecar_tunnel' else 0.0 if arg('world_profile') == 'racecar_walker' else -9.0 if arg('world_profile') == 'racetrack' else 0.0)"/>
+  <arg name="y" default="$(eval 0.0 if arg('world_profile') in ['empty', 'racecar', 'custom'] else -1.65 if arg('world_profile') == 'area' else 0.0 if arg('world_profile') == 'empty_wall' else 1.5 if arg('world_profile') == 'wall_right_angle' else -1.0 if arg('world_profile') == 'racecar_ar' else -1.5 if arg('world_profile') == 'racecar_cones' else -1.5 if arg('world_profile') == 'racecar_parking_1' else 0.0 if arg('world_profile') == 'racecar_tunnel' else 0.0 if arg('world_profile') == 'racecar_walker' else -2.0 if arg('world_profile') == 'racetrack' else 0.0)"/>
+  <arg name="z" default="0.04075"/>
   <arg name="yaw" default="$(eval 0.0 if arg('world_profile') not in ['racecar_parking_1'] else 1.57)"/>
   <arg name="cmd_vel_max_linear_x" default="0.22"/>
   <arg name="cmd_vel_max_linear_y" default="0.0"/>
-  <arg name="cmd_vel_max_angular_z" default="0.50"/>
+  <arg name="cmd_vel_max_angular_z" default="0.12"/>
   <arg name="cmd_vel_max_linear_accel" default="0.40"/>
   <arg name="cmd_vel_max_angular_accel" default="0.80"/>
   <arg name="cmd_vel_timeout" default="0.40"/>
+  <arg name="ackermann_max_steering_angle" default="0.45"/>
+  <arg name="ackermann_nav_max_steering_angle" default="0.35"/>
+  <arg name="ackermann_min_turn_speed" default="0.06"/>
   <arg name="enable_safety_supervisor" default="true"/>
-  <arg name="safety_hard_stop_distance" default="0.45"/>
-  <arg name="safety_slowdown_distance" default="0.85"/>
-  <arg name="safety_front_angle" default="0.65"/>
-  <arg name="safety_reaction_time" default="0.35"/>
-  <arg name="safety_ttc_stop_time" default="1.0"/>
+  <arg name="safety_hard_stop_distance" default="0.25"/>
+  <arg name="safety_slowdown_distance" default="0.65"/>
+  <arg name="safety_front_angle" default="0.55"/>
+  <arg name="safety_reaction_time" default="0.25"/>
+  <arg name="safety_ttc_stop_time" default="0.45"/>
   <arg name="safety_cancel_on_emergency" default="false"/>
   <arg name="enable_cmd_vel_limiter" default="false"/>
   <arg name="enable_depth_camera" default="false"/>
@@ -87,36 +90,46 @@
   <param name="robot_description" textfile="$(find zebrat)/urdf/R1_rviz.urdf" />
   <param name="robot_description_gazebo" textfile="$(find zebrat)/urdf/R1.urdf" />
 
-  <node
-    name="joint_state_publisher"
-    pkg="joint_state_publisher"
-    type="joint_state_publisher" />
+  <rosparam command="load" file="$(find zebrat)/config/r1_ackermann_control.yaml" />
+
+  <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher">
+    <remap from="joint_states" to="/r1/joint_states" />
+  </node>
 
   <node
-    name="robot_state_publisher"
-    pkg="robot_state_publisher"
-    type="robot_state_publisher" />
-
-  <node
-    name="cmd_vel_arbiter"
+    name="twist_to_ackermann"
     pkg="zebrat"
-    type="cmd_vel_arbiter.py"
+    type="twist_to_ackermann.py"
     output="screen">
-    <param name="nav_topic" value="/cmd_vel_nav" />
-    <param name="teleop_topic" value="/cmd_vel_teleop" />
-    <param name="output_topic" value="$(eval '/cmd_vel_safety_in' if arg('enable_safety_supervisor') else '/cmd_vel')" />
+    <param name="input_topic" value="/cmd_vel_nav" />
+    <param name="output_topic" value="/ackermann_cmd_nav" />
+    <param name="wheelbase" value="0.41893" />
+    <param name="max_speed" value="$(arg cmd_vel_max_linear_x)" />
+    <param name="max_steering_angle" value="$(arg ackermann_max_steering_angle)" />
+    <param name="planner_max_steering_angle" value="$(arg ackermann_nav_max_steering_angle)" />
+    <param name="min_turn_speed" value="$(arg ackermann_min_turn_speed)" />
+  </node>
+
+  <node
+    name="ackermann_cmd_arbiter"
+    pkg="zebrat"
+    type="ackermann_cmd_arbiter.py"
+    output="screen">
+    <param name="nav_topic" value="/ackermann_cmd_nav" />
+    <param name="teleop_topic" value="/ackermann_cmd_teleop" />
+    <param name="output_topic" value="$(eval '/ackermann_cmd_safety_in' if arg('enable_safety_supervisor') else '/ackermann_cmd')" />
     <param name="nav_timeout" value="$(arg cmd_vel_timeout)" />
     <param name="teleop_timeout" value="0.75" />
   </node>
 
   <node
     if="$(arg enable_safety_supervisor)"
-    name="cmd_vel_safety_supervisor"
+    name="ackermann_cmd_safety_supervisor"
     pkg="zebrat"
-    type="cmd_vel_safety_supervisor.py"
+    type="ackermann_cmd_safety_supervisor.py"
     output="screen">
-    <param name="input_topic" value="/cmd_vel_safety_in" />
-    <param name="output_topic" value="/cmd_vel" />
+    <param name="input_topic" value="/ackermann_cmd_safety_in" />
+    <param name="output_topic" value="/ackermann_cmd" />
     <param name="scan_topic" value="/scan" />
     <param name="hard_stop_distance" value="$(arg safety_hard_stop_distance)" />
     <param name="slowdown_distance" value="$(arg safety_slowdown_distance)" />
@@ -128,12 +141,45 @@
   </node>
 
   <node
+    name="r1_ackermann_controller"
+    pkg="zebrat"
+    type="r1_ackermann_controller.py"
+    output="screen">
+    <param name="input_topic" value="/ackermann_cmd" />
+    <param name="wheelbase" value="0.41893" />
+    <param name="front_track" value="0.26462" />
+    <param name="wheel_radius" value="0.04075" />
+    <param name="max_speed" value="$(arg cmd_vel_max_linear_x)" />
+    <param name="max_steering_angle" value="$(arg ackermann_max_steering_angle)" />
+    <param name="command_timeout" value="$(arg cmd_vel_timeout)" />
+  </node>
+
+  <node
     name="urdf_spawner"
     pkg="gazebo_ros"
     type="spawn_model"
     respawn="false"
     output="screen"
     args="-urdf -model r1 -param robot_description_gazebo -x $(arg x) -y $(arg y) -z $(arg z) -Y $(arg yaw)" />
+
+  <node
+    name="r1_controller_spawner"
+    pkg="controller_manager"
+    type="spawner"
+    ns="r1"
+    output="screen"
+    args="joint_state_controller front_left_steering_position_controller front_right_steering_position_controller front_left_wheel_velocity_controller front_right_wheel_velocity_controller" />
+
+  <node
+    name="gazebo_odometry_node"
+    pkg="zebrat"
+    type="gazebo_odometry.py"
+    output="screen">
+    <param name="model_name" value="r1" />
+    <param name="odom_topic" value="/odom" />
+    <param name="odom_frame_id" value="odom" />
+    <param name="child_frame_id" value="base_footprint" />
+  </node>
 
   <include
     if="$(arg enable_dynamic_obstacles)"

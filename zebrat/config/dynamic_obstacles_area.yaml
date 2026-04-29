@@ -8,6 +8,7 @@ profiles:
         type: pedestrian
         speed: 0.55
         loop: ping_pong
+        start_index: 1
         radius: 0.24
         height: 1.60
         color: [0.20, 0.32, 0.86, 1.0]

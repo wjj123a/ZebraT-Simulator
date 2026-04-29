@@ -1,14 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- This URDF was automatically created by SolidWorks to URDF Exporter and then extended for ROS/Gazebo simulation. -->
 <robot name="R1">
-  <link name="base_footprint" />
-
-  <joint name="base_footprint_joint" type="fixed">
-    <origin xyz="0 0 0.04075" rpy="0 0 0" />
-    <parent link="base_footprint" />
-    <child link="base_link" />
-  </joint>
-
   <link name="base_link">
     <inertial>
       <origin xyz="0.02 0.0 0.12" rpy="0 0 0" />
@@ -33,27 +25,30 @@
     <collision>
       <origin xyz="0.02 0 0.17" rpy="0 0 0" />
       <geometry>
-        <box size="0.56 0.29 0.24" />
-      </geometry>
-    </collision>
-    <!-- Hidden side skids catch the chassis before it can roll far enough to tip over. -->
-    <collision>
-      <origin xyz="0.02 0.145 -0.01075" rpy="0 0 0" />
-      <geometry>
-        <box size="0.40 0.03 0.02" />
-      </geometry>
-    </collision>
-    <collision>
-      <origin xyz="0.02 -0.145 -0.01075" rpy="0 0 0" />
-      <geometry>
-        <box size="0.40 0.03 0.02" />
+        <box size="0.50 0.16 0.22" />
       </geometry>
     </collision>
   </link>
 
+  <link name="front_left_steering_link">
+    <inertial>
+      <origin xyz="0 0 -0.020375" rpy="0 0 0" />
+      <mass value="0.30" />
+      <inertia ixx="2e-4" ixy="0" ixz="0" iyy="2e-4" iyz="0" izz="2e-4" />
+    </inertial>
+  </link>
+
+  <link name="front_right_steering_link">
+    <inertial>
+      <origin xyz="0 0 -0.020375" rpy="0 0 0" />
+      <mass value="0.30" />
+      <inertia ixx="2e-4" ixy="0" ixz="0" iyy="2e-4" iyz="0" izz="2e-4" />
+    </inertial>
+  </link>
+
   <link name="Empty_Link1">
     <inertial>
-      <origin xyz="-2.71421483177825E-07 0.0178376569876221 8.49577653054003E-08" rpy="0 0 0" />
+      <origin xyz="0 0 0" rpy="0 0 0" />
       <mass value="0.102007563940439" />
       <inertia
         ixx="6.03197633111551E-05"
@@ -64,34 +59,43 @@
         izz="6.03194335121187E-05" />
     </inertial>
     <visual>
-      <origin xyz="0 0 0" rpy="0 0 0" />
+      <origin xyz="0 0 0" rpy="1.57079632679 0 0" />
       <geometry>
-        <mesh filename="package://zebrat/urdf/meshes/Empty_Link1.stl" />
+        <cylinder radius="0.04075" length="0.040" />
       </geometry>
       <material name="">
         <color rgba="0.152941176470588 0.152941176470588 0.152941176470588 1" />
       </material>
     </visual>
     <collision>
-      <origin xyz="0 0.0175 0" rpy="1.57079632679 0 0" />
+      <origin xyz="0 0 0" rpy="1.57079632679 0 0" />
       <geometry>
         <cylinder radius="0.04075" length="0.040" />
       </geometry>
     </collision>
   </link>
 
-  <joint name="J1" type="continuous">
-    <origin xyz="0.220127909860013 0.142085316479216 0.0" rpy="0 0 0" />
+  <joint name="front_left_steering_joint" type="revolute">
+    <origin xyz="0.220127909860013 0.142085316479216 0.04075" rpy="0 0 0" />
     <parent link="base_link" />
+    <child link="front_left_steering_link" />
+    <axis xyz="0 0 1" />
+    <limit lower="-0.6" upper="0.6" effort="30" velocity="4" />
+    <dynamics damping="3.0" friction="0.2" />
+  </joint>
+
+  <joint name="front_left_wheel_joint" type="continuous">
+    <origin xyz="0 0 -0.04075" rpy="0 0 0" />
+    <parent link="front_left_steering_link" />
     <child link="Empty_Link1" />
     <axis xyz="0 1 0" />
-    <limit effort="20" velocity="20" />
-    <dynamics damping="2.0" friction="0.2" />
+    <limit effort="30" velocity="60" />
+    <dynamics damping="0.02" friction="0.0" />
   </joint>
 
   <link name="Empty_Link2">
     <inertial>
-      <origin xyz="-2.81109255456657E-07 0.00171272065277243 -1.72457881711047E-07" rpy="0 0 0" />
+      <origin xyz="0 0 0" rpy="0 0 0" />
       <mass value="0.102007476255524" />
       <inertia
         ixx="6.03196775650763E-05"
@@ -102,29 +106,38 @@
         izz="6.03194264639649E-05" />
     </inertial>
     <visual>
-      <origin xyz="0 0 0" rpy="0 0 0" />
+      <origin xyz="0 0 0" rpy="1.57079632679 0 0" />
       <geometry>
-        <mesh filename="package://zebrat/urdf/meshes/Empty_Link2.stl" />
+        <cylinder radius="0.04075" length="0.040" />
       </geometry>
       <material name="">
         <color rgba="0.152941176470588 0.152941176470588 0.152941176470588 1" />
       </material>
     </visual>
     <collision>
-      <origin xyz="0 0.0020 0" rpy="1.57079632679 0 0" />
+      <origin xyz="0 0 0" rpy="1.57079632679 0 0" />
       <geometry>
         <cylinder radius="0.04075" length="0.040" />
       </geometry>
     </collision>
   </link>
 
-  <joint name="J2" type="continuous">
-    <origin xyz="0.220127909860013 -0.122535316479216 0.0" rpy="0 0 0" />
+  <joint name="front_right_steering_joint" type="revolute">
+    <origin xyz="0.220127909860013 -0.122535316479216 0.04075" rpy="0 0 0" />
     <parent link="base_link" />
+    <child link="front_right_steering_link" />
+    <axis xyz="0 0 1" />
+    <limit lower="-0.6" upper="0.6" effort="30" velocity="4" />
+    <dynamics damping="3.0" friction="0.2" />
+  </joint>
+
+  <joint name="front_right_wheel_joint" type="continuous">
+    <origin xyz="0 0 -0.04075" rpy="0 0 0" />
+    <parent link="front_right_steering_link" />
     <child link="Empty_Link2" />
     <axis xyz="0 -1 0" />
-    <limit effort="20" velocity="20" />
-    <dynamics damping="2.0" friction="0.2" />
+    <limit effort="30" velocity="60" />
+    <dynamics damping="0.02" friction="0.0" />
   </joint>
 
   <link name="Empty_Link3">
@@ -140,12 +153,12 @@
         izz="7.82862361574103E-05" />
     </inertial>
     <visual>
-      <origin xyz="0 0 0" rpy="0 0 0" />
+      <origin xyz="0 -0.0010 0" rpy="1.57079632679 0 0" />
       <geometry>
-        <mesh filename="package://zebrat/urdf/meshes/Empty_Link3.stl" />
+        <cylinder radius="0.04075" length="0.0465" />
       </geometry>
       <material name="">
-        <color rgba="0.294117647058824 0.294117647058824 0.294117647058824 1" />
+        <color rgba="0.152941176470588 0.152941176470588 0.152941176470588 1" />
       </material>
     </visual>
     <collision>
@@ -156,13 +169,13 @@
     </collision>
   </link>
 
-  <joint name="J3" type="continuous">
+  <joint name="rear_right_wheel_joint" type="continuous">
     <origin xyz="-0.19879978611665 -0.122535316479219 0.0" rpy="0 0 0" />
     <parent link="base_link" />
     <child link="Empty_Link3" />
     <axis xyz="0 -1 0" />
     <limit effort="20" velocity="20" />
-    <dynamics damping="2.0" friction="0.2" />
+    <dynamics damping="0.02" friction="0.0" />
   </joint>
 
   <link name="Empty_Link4">
@@ -178,9 +191,9 @@
         izz="7.82861601090754E-05" />
     </inertial>
     <visual>
-      <origin xyz="0 0 0" rpy="0 0 0" />
+      <origin xyz="0 -0.0020 0" rpy="1.57079632679 0 0" />
       <geometry>
-        <mesh filename="package://zebrat/urdf/meshes/Empty_Link4.stl" />
+        <cylinder radius="0.04075" length="0.0465" />
       </geometry>
       <material name="">
         <color rgba="0.152941176470588 0.152941176470588 0.152941176470588 1" />
@@ -194,13 +207,13 @@
     </collision>
   </link>
 
-  <joint name="J4" type="continuous">
+  <joint name="rear_left_wheel_joint" type="continuous">
     <origin xyz="-0.19879978611665 0.119285316479219 0.0" rpy="0 0 0" />
     <parent link="base_link" />
     <child link="Empty_Link4" />
     <axis xyz="0 1 0" />
     <limit effort="20" velocity="20" />
-    <dynamics damping="2.0" friction="0.2" />
+    <dynamics damping="0.02" friction="0.0" />
   </joint>
 
   <link name="imu_link">
@@ -261,6 +274,14 @@
     <slip2>0.10</slip2>
     <kp>30000.0</kp>
     <kd>5.0</kd>
+  </gazebo>
+
+  <gazebo reference="front_left_steering_link">
+    <material>Gazebo/Black</material>
+  </gazebo>
+
+  <gazebo reference="front_right_steering_link">
+    <material>Gazebo/Black</material>
   </gazebo>
 
   <gazebo reference="Empty_Link1">
@@ -399,6 +420,72 @@
     </sensor>
   </gazebo>
 
+  <transmission name="front_left_steering_transmission">
+    <type>transmission_interface/SimpleTransmission</type>
+    <joint name="front_left_steering_joint">
+      <hardwareInterface>hardware_interface/PositionJointInterface</hardwareInterface>
+    </joint>
+    <actuator name="front_left_steering_motor">
+      <mechanicalReduction>1</mechanicalReduction>
+      <hardwareInterface>hardware_interface/PositionJointInterface</hardwareInterface>
+    </actuator>
+  </transmission>
+
+  <transmission name="front_right_steering_transmission">
+    <type>transmission_interface/SimpleTransmission</type>
+    <joint name="front_right_steering_joint">
+      <hardwareInterface>hardware_interface/PositionJointInterface</hardwareInterface>
+    </joint>
+    <actuator name="front_right_steering_motor">
+      <mechanicalReduction>1</mechanicalReduction>
+      <hardwareInterface>hardware_interface/PositionJointInterface</hardwareInterface>
+    </actuator>
+  </transmission>
+
+  <transmission name="front_left_wheel_transmission">
+    <type>transmission_interface/SimpleTransmission</type>
+    <joint name="front_left_wheel_joint">
+      <hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface>
+    </joint>
+    <actuator name="front_left_wheel_motor">
+      <mechanicalReduction>1</mechanicalReduction>
+      <hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface>
+    </actuator>
+  </transmission>
+
+  <transmission name="front_right_wheel_transmission">
+    <type>transmission_interface/SimpleTransmission</type>
+    <joint name="front_right_wheel_joint">
+      <hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface>
+    </joint>
+    <actuator name="front_right_wheel_motor">
+      <mechanicalReduction>1</mechanicalReduction>
+      <hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface>
+    </actuator>
+  </transmission>
+
+  <transmission name="rear_left_wheel_transmission">
+    <type>transmission_interface/SimpleTransmission</type>
+    <joint name="rear_left_wheel_joint">
+      <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+    </joint>
+    <actuator name="rear_left_wheel_passive">
+      <mechanicalReduction>1</mechanicalReduction>
+      <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+    </actuator>
+  </transmission>
+
+  <transmission name="rear_right_wheel_transmission">
+    <type>transmission_interface/SimpleTransmission</type>
+    <joint name="rear_right_wheel_joint">
+      <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+    </joint>
+    <actuator name="rear_right_wheel_passive">
+      <mechanicalReduction>1</mechanicalReduction>
+      <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+    </actuator>
+  </transmission>
+
   <gazebo>
     <plugin name="ground_truth_odom" filename="libgazebo_ros_p3d.so">
       <alwaysOn>true</alwaysOn>
@@ -414,14 +501,10 @@
   </gazebo>
 
   <gazebo>
-    <plugin name="planar_move" filename="libgazebo_ros_planar_move.so">
-      <robotNamespace>/</robotNamespace>
-      <commandTopic>cmd_vel</commandTopic>
-      <odometryTopic>odom</odometryTopic>
-      <odometryFrame>odom</odometryFrame>
-      <robotBaseFrame>base_footprint</robotBaseFrame>
-      <odometryRate>50.0</odometryRate>
-      <cmdTimeout>0.5</cmdTimeout>
+    <plugin name="gazebo_ros_control" filename="libgazebo_ros_control.so">
+      <robotNamespace>/r1</robotNamespace>
+      <robotParam>/robot_description_gazebo</robotParam>
+      <robotSimType>gazebo_ros_control/DefaultRobotHWSim</robotSimType>
     </plugin>
   </gazebo>
 </robot>

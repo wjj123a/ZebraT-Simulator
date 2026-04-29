@@ -7,13 +7,14 @@ import time
 
 import actionlib
 import rospy
+import tf
 from actionlib_msgs.msg import GoalStatus
 from geometry_msgs.msg import PoseStamped
 from geometry_msgs.msg import PoseWithCovarianceStamped
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
 from nav_msgs.msg import Odometry
 from sensor_msgs.msg import LaserScan
-from geometry_msgs.msg import Twist
+from ackermann_msgs.msg import AckermannDriveStamped
 from tf.transformations import euler_from_quaternion
 
 sys.path.insert(0, os.path.dirname(__file__))
@@ -43,7 +44,8 @@ class NavigationRegression:
         self.server_timeout = float(rospy.get_param("~server_timeout", 90.0))
         self.startup_delay = float(rospy.get_param("~startup_delay", 5.0))
         self.continue_on_failure = bool(rospy.get_param("~continue_on_failure", False))
-        self.idle_cmd_vel_timeout = float(rospy.get_param("~idle_cmd_vel_timeout", 20.0))
+        self.idle_command_timeout = float(rospy.get_param("~idle_command_timeout", 20.0))
+        self.command_topic = rospy.get_param("~command_topic", "/ackermann_cmd")
         self.frame_id = rospy.get_param("~frame_id", "map")
         self.goals = rospy.get_param(f"~{self.goal_set}_goals", [])
         self.safe_goal_enabled = bool(rospy.get_param("~safe_goal_enabled", True))
@@ -76,13 +78,14 @@ class NavigationRegression:
                 dynamic_route_inflation=rospy.get_param("~safe_goal_dynamic_route_inflation", 0.42),
             )
         self._last_scan_min = float("inf")
-        self._last_cmd_vel_wall = time.monotonic()
+        self._last_command_wall = time.monotonic()
         self._collision_proxy_triggered = False
         self._odom_pose = None
         self._map_pose = None
+        self._tf_listener = tf.TransformListener()
 
         rospy.Subscriber("/scan", LaserScan, self._scan_callback, queue_size=1)
-        rospy.Subscriber("/cmd_vel", Twist, self._cmd_vel_callback, queue_size=1)
+        rospy.Subscriber(self.command_topic, AckermannDriveStamped, self._command_callback, queue_size=1)
         rospy.Subscriber("/odom", Odometry, self._odom_callback, queue_size=1)
         rospy.Subscriber("/amcl_pose", PoseWithCovarianceStamped, self._amcl_pose_callback, queue_size=1)
 
@@ -94,9 +97,9 @@ class NavigationRegression:
         if self._last_scan_min < self.min_safe_scan:
             self._collision_proxy_triggered = True
 
-    def _cmd_vel_callback(self, message):
-        if abs(message.linear.x) + abs(message.linear.y) + abs(message.angular.z) > 1e-3:
-            self._last_cmd_vel_wall = time.monotonic()
+    def _command_callback(self, message):
+        if abs(message.drive.speed) + abs(message.drive.steering_angle) > 1e-3:
+            self._last_command_wall = time.monotonic()
 
     def _odom_callback(self, message):
         self._odom_pose = self._extract_pose_tuple(message.pose.pose)
@@ -218,9 +221,9 @@ class NavigationRegression:
                 self._client.cancel_goal()
                 rospy.logwarn("Goal %s timed out after %.1fs", name, float(goal_item.get("timeout", self.default_timeout)))
                 return GoalStatus.ABORTED
-            if time.monotonic() - self._last_cmd_vel_wall > self.idle_cmd_vel_timeout:
-                rospy.logwarn("Goal %s has been idle for %.1fs", name, self.idle_cmd_vel_timeout)
-                self._last_cmd_vel_wall = time.monotonic()
+            if time.monotonic() - self._last_command_wall > self.idle_command_timeout:
+                rospy.logwarn("Goal %s has been idle for %.1fs", name, self.idle_command_timeout)
+                self._last_command_wall = time.monotonic()
             rospy.sleep(0.2)
 
         self._client.cancel_all_goals()
@@ -229,11 +232,23 @@ class NavigationRegression:
     def _adjusted_goal_xy_reached(self, goal_item):
         if not self.safe_goal_accept_xy_on_adjusted or not goal_item.get("safe_goal_adjusted", False):
             return False
-        pose = self._map_pose or self._odom_pose
+        pose = self._current_map_pose() or self._map_pose or self._odom_pose
         if pose is None:
             return False
         x, y, _yaw = pose
         return math.hypot(float(goal_item["x"]) - x, float(goal_item["y"]) - y) <= self.safe_goal_adjusted_xy_tolerance
+
+    def _current_map_pose(self):
+        try:
+            translation, rotation = self._tf_listener.lookupTransform(
+                self.frame_id,
+                "base_footprint",
+                rospy.Time(0),
+            )
+        except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
+            return None
+        _, _, yaw = euler_from_quaternion(rotation)
+        return float(translation[0]), float(translation[1]), float(yaw)
 
     @staticmethod
     def _format_elapsed(elapsed_seconds):
@@ -248,8 +263,11 @@ class NavigationRegression:
         return angle
 
     def _format_goal_metrics(self, goal_item):
-        pose = self._map_pose
-        pose_label = "map_pose"
+        pose = self._current_map_pose()
+        pose_label = "tf_pose"
+        if pose is None:
+            pose = self._map_pose
+            pose_label = "map_pose"
         if pose is None:
             pose = self._odom_pose
             pose_label = "odom_pose"
