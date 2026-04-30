@@ -18,3 +18,11 @@ r1:
   front_right_wheel_velocity_controller:
     type: velocity_controllers/JointVelocityController
     joint: front_right_wheel_joint
+
+  rear_left_wheel_velocity_controller:
+    type: velocity_controllers/JointVelocityController
+    joint: rear_left_wheel_joint
+
+  rear_right_wheel_velocity_controller:
+    type: velocity_controllers/JointVelocityController
+    joint: rear_right_wheel_joint

@@ -3,7 +3,7 @@
   <arg name="robot" default="r1"/>
   <arg name="world_name" default="$(find zebrat)/worlds/area.world"/>
   <arg name="gui" default="true"/>
-  <arg name="paused" default="false"/>
+  <arg name="paused" default="true"/>
   <arg name="auto_unpause" default="true"/>
   <arg name="use_sim_time" default="true"/>
   <arg name="headless" default="false"/>
@@ -27,11 +27,12 @@
   <arg name="rviz" default="true"/>
   <arg name="enable_navigation" default="true"/>
   <arg name="enable_move_base" default="true"/>
+  <arg name="local_planner" default="teb"/>
   <arg name="enable_safe_goal_relay" default="true"/>
   <arg name="safe_goal_input_topic" default="/safe_move_base_simple/goal"/>
   <arg name="safe_goal_output_topic" default="/move_base_simple/goal"/>
   <arg name="safe_goal_wait_timeout" default="6.0"/>
-  <arg name="safe_goal_search_radius" default="1.2"/>
+  <arg name="safe_goal_search_radius" default="2.0"/>
   <arg name="safe_goal_search_step" default="0.10"/>
   <arg name="safe_goal_target_check_radius" default="0.35"/>
   <arg name="safe_goal_use_dynamic_routes" default="true"/>
@@ -52,14 +53,25 @@
   <arg name="save_map" default="false"/>
   <arg name="map_output_prefix" default="$(find zebrat)/maps/$(arg world_profile)"/>
   <arg name="cmd_vel_max_linear_x" default="0.22"/>
+  <arg name="cmd_vel_max_reverse_x" default="0.06"/>
+  <arg name="planner_max_reverse_x" default="0.01"/>
+  <arg name="planner_allow_reverse" default="false"/>
+  <arg name="planner_suppressed_reverse_behavior" default="forward_crawl"/>
   <arg name="cmd_vel_max_linear_y" default="0.0"/>
   <arg name="cmd_vel_max_angular_z" default="0.12"/>
   <arg name="cmd_vel_max_linear_accel" default="0.40"/>
-  <arg name="cmd_vel_max_angular_accel" default="0.80"/>
+  <arg name="cmd_vel_max_angular_accel" default="0.70"/>
   <arg name="cmd_vel_timeout" default="0.40"/>
   <arg name="ackermann_max_steering_angle" default="0.45"/>
-  <arg name="ackermann_nav_max_steering_angle" default="0.35"/>
+  <arg name="ackermann_nav_max_steering_angle" default="0.42"/>
   <arg name="ackermann_min_turn_speed" default="0.06"/>
+  <arg name="ackermann_drive_wheels" default="all"/>
+  <arg name="ackermann_steering_trim" default="0.0"/>
+  <arg name="ackermann_left_wheel_speed_scale" default="1.0"/>
+  <arg name="ackermann_right_wheel_speed_scale" default="1.0"/>
+  <arg name="ackermann_steering_rate_limit" default="0.40"/>
+  <arg name="ackermann_steering_smoothing_alpha" default="0.30"/>
+  <arg name="ackermann_steering_deadband" default="0.032"/>
   <arg name="enable_safety_supervisor" default="true"/>
   <arg name="safety_hard_stop_distance" default="0.25"/>
   <arg name="safety_slowdown_distance" default="0.65"/>
@@ -67,6 +79,19 @@
   <arg name="safety_reaction_time" default="0.25"/>
   <arg name="safety_ttc_stop_time" default="0.45"/>
   <arg name="safety_cancel_on_emergency" default="false"/>
+  <arg name="enable_reverse_recovery" default="true"/>
+  <arg name="reverse_recovery_speed" default="0.05"/>
+  <arg name="reverse_recovery_duration" default="0.8"/>
+  <arg name="reverse_recovery_max_per_goal" default="2"/>
+  <arg name="reverse_recovery_steering_angle" default="0.35"/>
+  <arg name="reverse_recovery_stuck_timeout" default="26.0"/>
+  <arg name="reverse_recovery_min_goal_age" default="35.0"/>
+  <arg name="reverse_recovery_post_clear_wait" default="10.0"/>
+  <arg name="reverse_recovery_min_forward_attempts" default="20"/>
+  <arg name="reverse_recovery_min_turn_attempts" default="8"/>
+  <arg name="reverse_recovery_min_planner_reverse_requests" default="10"/>
+  <arg name="reverse_recovery_turn_attempt_grace" default="22.0"/>
+  <arg name="reverse_recovery_min_progress_distance" default="0.16"/>
 
   <include
     if="$(eval arg('robot') == 'r1')"
@@ -83,6 +108,7 @@
     <arg name="rviz_config" value="$(arg rviz_config)" />
     <arg name="enable_navigation" value="$(arg enable_navigation)" />
     <arg name="enable_move_base" value="$(arg enable_move_base)" />
+    <arg name="local_planner" value="$(arg local_planner)" />
     <arg name="enable_safe_goal_relay" value="$(arg enable_safe_goal_relay)" />
     <arg name="safe_goal_input_topic" value="$(arg safe_goal_input_topic)" />
     <arg name="safe_goal_output_topic" value="$(arg safe_goal_output_topic)" />
@@ -109,6 +135,10 @@
     <arg name="z" value="$(arg z)" />
     <arg name="yaw" value="$(arg yaw)" />
     <arg name="cmd_vel_max_linear_x" value="$(arg cmd_vel_max_linear_x)" />
+    <arg name="cmd_vel_max_reverse_x" value="$(arg cmd_vel_max_reverse_x)" />
+    <arg name="planner_max_reverse_x" value="$(arg planner_max_reverse_x)" />
+    <arg name="planner_allow_reverse" value="$(arg planner_allow_reverse)" />
+    <arg name="planner_suppressed_reverse_behavior" value="$(arg planner_suppressed_reverse_behavior)" />
     <arg name="cmd_vel_max_linear_y" value="$(arg cmd_vel_max_linear_y)" />
     <arg name="cmd_vel_max_angular_z" value="$(arg cmd_vel_max_angular_z)" />
     <arg name="cmd_vel_max_linear_accel" value="$(arg cmd_vel_max_linear_accel)" />
@@ -117,6 +147,13 @@
     <arg name="ackermann_max_steering_angle" value="$(arg ackermann_max_steering_angle)" />
     <arg name="ackermann_nav_max_steering_angle" value="$(arg ackermann_nav_max_steering_angle)" />
     <arg name="ackermann_min_turn_speed" value="$(arg ackermann_min_turn_speed)" />
+    <arg name="ackermann_drive_wheels" value="$(arg ackermann_drive_wheels)" />
+    <arg name="ackermann_steering_trim" value="$(arg ackermann_steering_trim)" />
+    <arg name="ackermann_left_wheel_speed_scale" value="$(arg ackermann_left_wheel_speed_scale)" />
+    <arg name="ackermann_right_wheel_speed_scale" value="$(arg ackermann_right_wheel_speed_scale)" />
+    <arg name="ackermann_steering_rate_limit" value="$(arg ackermann_steering_rate_limit)" />
+    <arg name="ackermann_steering_smoothing_alpha" value="$(arg ackermann_steering_smoothing_alpha)" />
+    <arg name="ackermann_steering_deadband" value="$(arg ackermann_steering_deadband)" />
     <arg name="enable_safety_supervisor" value="$(arg enable_safety_supervisor)" />
     <arg name="safety_hard_stop_distance" value="$(arg safety_hard_stop_distance)" />
     <arg name="safety_slowdown_distance" value="$(arg safety_slowdown_distance)" />
@@ -124,6 +161,19 @@
     <arg name="safety_reaction_time" value="$(arg safety_reaction_time)" />
     <arg name="safety_ttc_stop_time" value="$(arg safety_ttc_stop_time)" />
     <arg name="safety_cancel_on_emergency" value="$(arg safety_cancel_on_emergency)" />
+    <arg name="enable_reverse_recovery" value="$(arg enable_reverse_recovery)" />
+    <arg name="reverse_recovery_speed" value="$(arg reverse_recovery_speed)" />
+    <arg name="reverse_recovery_duration" value="$(arg reverse_recovery_duration)" />
+    <arg name="reverse_recovery_max_per_goal" value="$(arg reverse_recovery_max_per_goal)" />
+    <arg name="reverse_recovery_steering_angle" value="$(arg reverse_recovery_steering_angle)" />
+    <arg name="reverse_recovery_stuck_timeout" value="$(arg reverse_recovery_stuck_timeout)" />
+    <arg name="reverse_recovery_min_goal_age" value="$(arg reverse_recovery_min_goal_age)" />
+    <arg name="reverse_recovery_post_clear_wait" value="$(arg reverse_recovery_post_clear_wait)" />
+    <arg name="reverse_recovery_min_forward_attempts" value="$(arg reverse_recovery_min_forward_attempts)" />
+    <arg name="reverse_recovery_min_turn_attempts" value="$(arg reverse_recovery_min_turn_attempts)" />
+    <arg name="reverse_recovery_min_planner_reverse_requests" value="$(arg reverse_recovery_min_planner_reverse_requests)" />
+    <arg name="reverse_recovery_turn_attempt_grace" value="$(arg reverse_recovery_turn_attempt_grace)" />
+    <arg name="reverse_recovery_min_progress_distance" value="$(arg reverse_recovery_min_progress_distance)" />
     <arg name="enable_cmd_vel_limiter" value="$(arg enable_cmd_vel_limiter)" />
     <arg name="enable_depth_camera" value="$(arg enable_depth_camera)" />
     <arg name="enable_laser_visualization" value="$(arg enable_laser_visualization)" />

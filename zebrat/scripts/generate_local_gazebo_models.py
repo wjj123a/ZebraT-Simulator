@@ -335,6 +335,13 @@ def part(name, color, triangles):
     }
 
 
+def safe_xml_id(name, fallback):
+    value = re.sub(r"[^A-Za-z0-9_.-]", "_", name).strip("_")
+    if not value or not re.match(r"[A-Za-z_]", value[0]):
+        value = fallback
+    return value
+
+
 def box_triangles(center, size):
     cx, cy, cz = center
     sx, sy, sz = (size[0] / 2.0, size[1] / 2.0, size[2] / 2.0)
@@ -422,6 +429,33 @@ def vehicle_parts(length, width, body_height, cabin_height, body_color, cabin_co
         part("wheel_fr", wheel_color, box_triangles((wheel_x, -wheel_y, wheel_z), wheel_size)),
         part("wheel_rl", wheel_color, box_triangles((-wheel_x, wheel_y, wheel_z), wheel_size)),
         part("wheel_rr", wheel_color, box_triangles((-wheel_x, -wheel_y, wheel_z), wheel_size)),
+    ]
+
+
+def polaris_parts():
+    body_color = PALETTE["polaris_ranger_ev"]
+    cabin_color = tint(body_color, 0.12)
+    dark = rgba(0.10, 0.10, 0.10)
+    accent = rgba(0.18, 0.18, 0.18)
+    length = 3.5
+    width = 1.7
+    body_height = 1.0
+    cabin_height = 0.7
+    wheel_size = (0.62, 0.24, 0.46)
+    wheel_x = 0.98
+    wheel_y = 0.71
+    wheel_z = wheel_size[2] / 2.0
+    return [
+        part("Ranger", body_color, box_triangles((0.0, 0.0, body_height * 0.56), (length, width, body_height))),
+        part("Cabin", cabin_color, box_triangles((0.28, 0.0, body_height + cabin_height * 0.40), (1.6, 1.5, cabin_height))),
+        part("Front_Wheel_Left", dark, box_triangles((wheel_x, wheel_y, wheel_z), wheel_size)),
+        part("Front_Wheel_Right", dark, box_triangles((wheel_x, -wheel_y, wheel_z), wheel_size)),
+        part("Rear_Wheel_Left", dark, box_triangles((-wheel_x, wheel_y, wheel_z), wheel_size)),
+        part("Rear_Wheel_Right", dark, box_triangles((-wheel_x, -wheel_y, wheel_z), wheel_size)),
+        part("Pedal_Gas", accent, box_triangles((0.84, -0.22, 0.42), (0.10, 0.20, 0.06))),
+        part("Pedal_brake", accent, box_triangles((0.84, 0.06, 0.42), (0.12, 0.22, 0.06))),
+        part("Steering_Wheel", dark, cylinder_triangles((0.78, 0.0, 0.82), 0.18, 0.06, sides=16)),
+        part("E-Brake", accent, box_triangles((0.10, -0.44, 0.58), (0.08, 0.38, 0.08))),
     ]
 
 
@@ -671,7 +705,7 @@ def mesh_parts_for_ref(ref):
     if ref == "playground/meshes/playground.dae":
         return playground_parts()
     if ref == "polaris_ranger_ev/meshes/polaris.dae":
-        return vehicle_parts(3.5, 1.7, 1.0, 0.7, PALETTE["polaris_ranger_ev"], tint(PALETTE["polaris_ranger_ev"], 0.12), rgba(0.10, 0.10, 0.10))
+        return polaris_parts()
     if ref == "salon/meshes/salon.dae":
         return storefront_parts(7.2, 5.4, 7.0, rgba(0.24, 0.58, 0.64), rgba(0.96, 0.94, 0.88), rgba(0.18, 0.28, 0.34))
     if ref == "table_marble/meshes/table_lightmap.dae":
@@ -715,10 +749,17 @@ def triangles_to_dae(path, parts):
     materials = []
     geometries = []
     nodes = []
+    used_geometry_ids = set()
     for index, item in enumerate(parts):
         effect_id = f"effect_{index}"
         material_id = f"material_{index}"
-        geometry_id = f"geometry_{index}"
+        base_geometry_id = safe_xml_id(item["name"], f"geometry_{index}")
+        geometry_id = base_geometry_id
+        suffix = 1
+        while geometry_id in used_geometry_ids:
+            suffix += 1
+            geometry_id = f"{base_geometry_id}_{suffix}"
+        used_geometry_ids.add(geometry_id)
         color = item["color"]
         positions = []
         indices = []
@@ -770,7 +811,7 @@ def triangles_to_dae(path, parts):
     </geometry>"""
         )
         nodes.append(
-            f"""      <node id="node_{index}" name="{item['name']}">
+            f"""      <node id="node_{geometry_id}" name="{item['name']}">
         <instance_geometry url="#{geometry_id}">
           <bind_material>
             <technique_common>

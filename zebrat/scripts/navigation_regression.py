@@ -158,6 +158,15 @@ class NavigationRegression:
         requested_pose = self._to_pose(goal_item)
         resolved = self._goal_resolver.resolve_pose(requested_pose, name)
         resolved_item = dict(goal_item)
+        if resolved.blocked:
+            resolved_item["safe_goal_blocked"] = True
+            resolved_item["safe_goal_blocked_reason"] = resolved.reason
+            rospy.logerr(
+                "Navigation goal %s is unsafe and has no replacement; not sending requested pose",
+                name,
+            )
+            return resolved_item
+
         if resolved.adjusted:
             resolved_item["requested_x"] = float(goal_item["x"])
             resolved_item["requested_y"] = float(goal_item["y"])
@@ -224,7 +233,7 @@ class NavigationRegression:
             if time.monotonic() - self._last_command_wall > self.idle_command_timeout:
                 rospy.logwarn("Goal %s has been idle for %.1fs", name, self.idle_command_timeout)
                 self._last_command_wall = time.monotonic()
-            rospy.sleep(0.2)
+            time.sleep(0.2)
 
         self._client.cancel_all_goals()
         return GoalStatus.PREEMPTED
@@ -301,6 +310,38 @@ class NavigationRegression:
             nav_goal_item = self._resolve_goal_item(goal_item, name)
             self._collision_proxy_triggered = False
             goal_wall_start = time.monotonic()
+            if nav_goal_item.get("safe_goal_blocked", False):
+                status = GoalStatus.ABORTED
+                status_name = STATUS_NAMES.get(status, str(status))
+                elapsed = self._format_elapsed(time.monotonic() - goal_wall_start)
+                reason = nav_goal_item.get("safe_goal_blocked_reason", "blocked")
+                if self._is_allowed_terminal_state(status, goal_item):
+                    rospy.loginfo(
+                        "[%d/%d] Goal %s blocked before send with %s after %s (%s)",
+                        index,
+                        len(self.goals),
+                        name,
+                        status_name,
+                        elapsed,
+                        reason,
+                    )
+                    if self._should_stop_after_accept(status, goal_item):
+                        rospy.loginfo("Stopping regression after blocked terminal goal %s", name)
+                        break
+                    continue
+
+                failures.append(f"{name}: BLOCKED({reason})")
+                rospy.logerr(
+                    "[%d/%d] Goal %s rejected before send: %s",
+                    index,
+                    len(self.goals),
+                    name,
+                    reason,
+                )
+                if not self.continue_on_failure:
+                    break
+                continue
+
             self._client.send_goal(self._to_goal(nav_goal_item))
             rospy.loginfo(
                 "[%d/%d] Sent goal %s to (%.2f, %.2f, %.2f)",

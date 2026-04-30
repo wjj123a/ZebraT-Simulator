@@ -169,6 +169,7 @@ include_directories(
 ## in contrast to setup.py, you can choose the destination
 catkin_install_python(PROGRAMS
   scripts/ackermann_cmd_arbiter.py
+  scripts/ackermann_reverse_recovery.py
   scripts/ackermann_cmd_safety_supervisor.py
   scripts/cmd_vel_arbiter.py
   scripts/cmd_vel_safety_supervisor.py
@@ -196,6 +197,10 @@ install(FILES
   scripts/goal_safety.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
+
+if(CATKIN_ENABLE_TESTING)
+  catkin_add_nosetests(test/test_ackermann_geometry.py)
+endif()
 
 ## Mark executables for installation
 ## See http://docs.ros.org/melodic/api/catkin/html/howto/format1/building_executables.html

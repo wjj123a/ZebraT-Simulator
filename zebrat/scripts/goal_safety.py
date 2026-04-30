@@ -18,11 +18,12 @@ def normalize_topic_list(value):
 
 
 class ResolvedGoal:
-    def __init__(self, pose, adjusted=False, waited=False, reason=""):
+    def __init__(self, pose, adjusted=False, waited=False, reason="", blocked=False):
         self.pose = pose
         self.adjusted = adjusted
         self.waited = waited
         self.reason = reason
+        self.blocked = blocked
 
 
 class CostmapGoalResolver:
@@ -72,7 +73,7 @@ class CostmapGoalResolver:
         while not rospy.is_shutdown() and time.monotonic() < deadline:
             if len(self._costmaps) >= required_count:
                 return True
-            rospy.sleep(0.1)
+            time.sleep(0.1)
         return len(self._costmaps) > 0
 
     @staticmethod
@@ -294,7 +295,7 @@ class CostmapGoalResolver:
         deadline = time.monotonic() + self.wait_timeout
         waited = False
         while not rospy.is_shutdown() and time.monotonic() < deadline:
-            rospy.sleep(self.wait_check_period)
+            time.sleep(self.wait_check_period)
             waited = True
             if self.is_pose_safe(pose):
                 rospy.loginfo("Requested %s became free after waiting", name)
@@ -303,11 +304,11 @@ class CostmapGoalResolver:
         candidate = self.find_nearest_safe_pose(pose)
         if candidate is None:
             rospy.logerr(
-                "No safe replacement found for %s within %.2fm; using requested pose unchanged",
+                "No safe replacement found for %s within %.2fm; rejecting unsafe target",
                 name,
                 self.search_radius,
             )
-            return ResolvedGoal(pose, waited=waited, reason="no_replacement")
+            return ResolvedGoal(pose, waited=waited, reason="no_replacement", blocked=True)
 
         rospy.logwarn(
             "Adjusted %s from (%.2f, %.2f) to nearest safe pose (%.2f, %.2f)",

@@ -44,3 +44,6 @@ dynamic_goal_path_probe_goals:
   - {name: pedestrian_route_goal, x: 2.75, y: 0.0, yaw: 0.0, timeout: 90.0, allow_blocked: true, stop_on_blocked: true}
 dynamic_goal_path_safe_goals:
   - {name: pedestrian_route_goal_offset, x: 3.05, y: -1.65, yaw: 0.0, timeout: 45.0}
+user_reported_goals:
+  - {name: reported_cart_loop_mid, x: 5.472, y: 3.068, yaw: 0.672, timeout: 45.0, allow_blocked: true}
+  - {name: reported_return_occupied, x: -0.322, y: -1.016, yaw: 3.065, timeout: 45.0, allow_blocked: true}

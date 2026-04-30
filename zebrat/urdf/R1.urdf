@@ -90,7 +90,7 @@
     <child link="Empty_Link1" />
     <axis xyz="0 1 0" />
     <limit effort="30" velocity="60" />
-    <dynamics damping="0.02" friction="0.0" />
+    <dynamics damping="0.50" friction="0.02" />
   </joint>
 
   <link name="Empty_Link2">
@@ -137,7 +137,7 @@
     <child link="Empty_Link2" />
     <axis xyz="0 -1 0" />
     <limit effort="30" velocity="60" />
-    <dynamics damping="0.02" friction="0.0" />
+    <dynamics damping="0.50" friction="0.02" />
   </joint>
 
   <link name="Empty_Link3">
@@ -175,7 +175,7 @@
     <child link="Empty_Link3" />
     <axis xyz="0 -1 0" />
     <limit effort="20" velocity="20" />
-    <dynamics damping="0.02" friction="0.0" />
+    <dynamics damping="0.50" friction="0.02" />
   </joint>
 
   <link name="Empty_Link4">
@@ -213,7 +213,7 @@
     <child link="Empty_Link4" />
     <axis xyz="0 1 0" />
     <limit effort="20" velocity="20" />
-    <dynamics damping="0.02" friction="0.0" />
+    <dynamics damping="0.50" friction="0.02" />
   </joint>
 
   <link name="imu_link">
@@ -273,7 +273,7 @@
     <slip1>0.10</slip1>
     <slip2>0.10</slip2>
     <kp>30000.0</kp>
-    <kd>5.0</kd>
+    <kd>20.0</kd>
   </gazebo>
 
   <gazebo reference="front_left_steering_link">
@@ -286,53 +286,53 @@
 
   <gazebo reference="Empty_Link1">
     <material>Gazebo/Black</material>
-    <mu1>4.0</mu1>
-    <mu2>4.0</mu2>
+    <mu1>8.0</mu1>
+    <mu2>8.0</mu2>
     <fdir1>1 0 0</fdir1>
-    <slip1>0.05</slip1>
-    <slip2>0.05</slip2>
+    <slip1>0.0</slip1>
+    <slip2>0.0</slip2>
     <kp>50000.0</kp>
-    <kd>5.0</kd>
+    <kd>20.0</kd>
   </gazebo>
 
   <gazebo reference="Empty_Link2">
     <material>Gazebo/Black</material>
-    <mu1>4.0</mu1>
-    <mu2>4.0</mu2>
+    <mu1>8.0</mu1>
+    <mu2>8.0</mu2>
     <fdir1>1 0 0</fdir1>
-    <slip1>0.05</slip1>
-    <slip2>0.05</slip2>
+    <slip1>0.0</slip1>
+    <slip2>0.0</slip2>
     <kp>50000.0</kp>
-    <kd>5.0</kd>
+    <kd>20.0</kd>
   </gazebo>
 
   <gazebo reference="Empty_Link3">
     <material>Gazebo/Black</material>
-    <mu1>4.0</mu1>
-    <mu2>4.0</mu2>
+    <mu1>8.0</mu1>
+    <mu2>8.0</mu2>
     <fdir1>1 0 0</fdir1>
-    <slip1>0.05</slip1>
-    <slip2>0.05</slip2>
+    <slip1>0.0</slip1>
+    <slip2>0.0</slip2>
     <kp>50000.0</kp>
-    <kd>5.0</kd>
+    <kd>20.0</kd>
   </gazebo>
 
   <gazebo reference="Empty_Link4">
     <material>Gazebo/Black</material>
-    <mu1>4.0</mu1>
-    <mu2>4.0</mu2>
+    <mu1>8.0</mu1>
+    <mu2>8.0</mu2>
     <fdir1>1 0 0</fdir1>
-    <slip1>0.05</slip1>
-    <slip2>0.05</slip2>
+    <slip1>0.0</slip1>
+    <slip2>0.0</slip2>
     <kp>50000.0</kp>
-    <kd>5.0</kd>
+    <kd>20.0</kd>
   </gazebo>
 
   <gazebo reference="laser_link">
     <sensor name="front_laser" type="ray">
       <always_on>true</always_on>
       <update_rate>15.0</update_rate>
-      <visualize>true</visualize>
+      <visualize>false</visualize>
       <pose>0 0 0 0 0 0</pose>
       <ray>
         <scan>
@@ -467,22 +467,22 @@
   <transmission name="rear_left_wheel_transmission">
     <type>transmission_interface/SimpleTransmission</type>
     <joint name="rear_left_wheel_joint">
-      <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+      <hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface>
     </joint>
-    <actuator name="rear_left_wheel_passive">
+    <actuator name="rear_left_wheel_motor">
       <mechanicalReduction>1</mechanicalReduction>
-      <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+      <hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface>
     </actuator>
   </transmission>
 
   <transmission name="rear_right_wheel_transmission">
     <type>transmission_interface/SimpleTransmission</type>
     <joint name="rear_right_wheel_joint">
-      <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+      <hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface>
     </joint>
-    <actuator name="rear_right_wheel_passive">
+    <actuator name="rear_right_wheel_motor">
       <mechanicalReduction>1</mechanicalReduction>
-      <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+      <hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface>
     </actuator>
   </transmission>
 

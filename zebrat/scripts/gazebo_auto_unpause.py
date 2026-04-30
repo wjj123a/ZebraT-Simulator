@@ -11,6 +11,17 @@ class GazeboAutoUnpause:
         self.check_period = float(rospy.get_param("~check_period", 1.0))
         self.keep_unpaused = bool(rospy.get_param("~keep_unpaused", True))
         self.max_wait = float(rospy.get_param("~max_wait", 60.0))
+        self.wait_for_controllers = bool(rospy.get_param("~wait_for_controllers", False))
+        self.controller_service = rospy.get_param(
+            "~controller_service",
+            "/r1/controller_manager/load_controller",
+        )
+        self.controller_wait_timeout = float(
+            rospy.get_param("~controller_wait_timeout", self.max_wait)
+        )
+        self.controller_startup_delay = float(
+            rospy.get_param("~controller_startup_delay", 3.0)
+        )
         self._unpause = None
         self._get_physics = None
 
@@ -22,6 +33,32 @@ class GazeboAutoUnpause:
         self._get_physics = rospy.ServiceProxy(
             "/gazebo/get_physics_properties", GetPhysicsProperties
         )
+
+    def _wait_for_controller_manager(self):
+        if not self.wait_for_controllers:
+            return True
+
+        rospy.loginfo(
+            "Waiting for controller manager before unpausing Gazebo: %s",
+            self.controller_service,
+        )
+        try:
+            rospy.wait_for_service(
+                self.controller_service,
+                timeout=max(self.controller_wait_timeout, 0.1),
+            )
+        except rospy.ROSException as exc:
+            rospy.logerr("Timed out waiting for %s: %s", self.controller_service, exc)
+            return False
+
+        if self.controller_startup_delay > 0.0:
+            rospy.loginfo(
+                "Controller manager is available; waiting %.1fs for controllers to load",
+                self.controller_startup_delay,
+            )
+            time.sleep(self.controller_startup_delay)
+        rospy.loginfo("Controller startup gate passed; Gazebo may unpause")
+        return True
 
     def _unpause_if_needed(self):
         try:
@@ -39,6 +76,8 @@ class GazeboAutoUnpause:
             self._connect()
         except rospy.ROSException as exc:
             rospy.logerr("Timed out waiting for Gazebo physics services: %s", exc)
+            return
+        if not self._wait_for_controller_manager():
             return
 
         while not rospy.is_shutdown():

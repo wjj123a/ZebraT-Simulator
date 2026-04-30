@@ -7,7 +7,7 @@
     name="world_profile"
     default="$(eval 'empty_wall' if 'empty_wall.world' in arg('world_name') else 'empty' if 'empty.world' in arg('world_name') else 'wall_right_angle' if 'wall_right_angle.world' in arg('world_name') else 'racecar_cones' if 'racecar_cones.world' in arg('world_name') else 'racecar_parking_1' if 'racecar_parking_1.world' in arg('world_name') else 'racecar_tunnel' if 'racecar_tunnel.world' in arg('world_name') else 'racecar_walker' if 'racecar_walker.world' in arg('world_name') else 'racecar_ar' if 'racecar_ar.world' in arg('world_name') else 'racecar' if 'racecar.world' in arg('world_name') else 'racetrack' if 'racetrack.world' in arg('world_name') else 'area' if 'area.world' in arg('world_name') else 'custom')"/>
   <arg name="gui" default="true"/>
-  <arg name="paused" default="false"/>
+  <arg name="paused" default="true"/>
   <arg name="auto_unpause" default="true"/>
   <arg name="use_sim_time" default="true"/>
   <arg name="physics" default="ode"/>
@@ -16,11 +16,12 @@
   <arg name="rviz_config" default="$(find zebrat)/rviz/navigation.rviz"/>
   <arg name="enable_navigation" default="true"/>
   <arg name="enable_move_base" default="true"/>
+  <arg name="local_planner" default="teb"/>
   <arg name="enable_safe_goal_relay" default="true"/>
   <arg name="safe_goal_input_topic" default="/safe_move_base_simple/goal"/>
   <arg name="safe_goal_output_topic" default="/move_base_simple/goal"/>
   <arg name="safe_goal_wait_timeout" default="6.0"/>
-  <arg name="safe_goal_search_radius" default="1.2"/>
+  <arg name="safe_goal_search_radius" default="2.0"/>
   <arg name="safe_goal_search_step" default="0.10"/>
   <arg name="safe_goal_target_check_radius" default="0.35"/>
   <arg name="safe_goal_use_dynamic_routes" default="true"/>
@@ -47,14 +48,25 @@
   <arg name="z" default="0.04075"/>
   <arg name="yaw" default="$(eval 0.0 if arg('world_profile') not in ['racecar_parking_1'] else 1.57)"/>
   <arg name="cmd_vel_max_linear_x" default="0.22"/>
+  <arg name="cmd_vel_max_reverse_x" default="0.06"/>
+  <arg name="planner_max_reverse_x" default="0.01"/>
+  <arg name="planner_allow_reverse" default="false"/>
+  <arg name="planner_suppressed_reverse_behavior" default="forward_crawl"/>
   <arg name="cmd_vel_max_linear_y" default="0.0"/>
   <arg name="cmd_vel_max_angular_z" default="0.12"/>
   <arg name="cmd_vel_max_linear_accel" default="0.40"/>
-  <arg name="cmd_vel_max_angular_accel" default="0.80"/>
+  <arg name="cmd_vel_max_angular_accel" default="0.70"/>
   <arg name="cmd_vel_timeout" default="0.40"/>
   <arg name="ackermann_max_steering_angle" default="0.45"/>
-  <arg name="ackermann_nav_max_steering_angle" default="0.35"/>
+  <arg name="ackermann_nav_max_steering_angle" default="0.42"/>
   <arg name="ackermann_min_turn_speed" default="0.06"/>
+  <arg name="ackermann_drive_wheels" default="all"/>
+  <arg name="ackermann_steering_trim" default="0.0"/>
+  <arg name="ackermann_left_wheel_speed_scale" default="1.0"/>
+  <arg name="ackermann_right_wheel_speed_scale" default="1.0"/>
+  <arg name="ackermann_steering_rate_limit" default="0.40"/>
+  <arg name="ackermann_steering_smoothing_alpha" default="0.30"/>
+  <arg name="ackermann_steering_deadband" default="0.032"/>
   <arg name="enable_safety_supervisor" default="true"/>
   <arg name="safety_hard_stop_distance" default="0.25"/>
   <arg name="safety_slowdown_distance" default="0.65"/>
@@ -62,6 +74,19 @@
   <arg name="safety_reaction_time" default="0.25"/>
   <arg name="safety_ttc_stop_time" default="0.45"/>
   <arg name="safety_cancel_on_emergency" default="false"/>
+  <arg name="enable_reverse_recovery" default="true"/>
+  <arg name="reverse_recovery_speed" default="0.05"/>
+  <arg name="reverse_recovery_duration" default="0.8"/>
+  <arg name="reverse_recovery_max_per_goal" default="2"/>
+  <arg name="reverse_recovery_steering_angle" default="0.35"/>
+  <arg name="reverse_recovery_stuck_timeout" default="26.0"/>
+  <arg name="reverse_recovery_min_goal_age" default="35.0"/>
+  <arg name="reverse_recovery_post_clear_wait" default="10.0"/>
+  <arg name="reverse_recovery_min_forward_attempts" default="20"/>
+  <arg name="reverse_recovery_min_turn_attempts" default="8"/>
+  <arg name="reverse_recovery_min_planner_reverse_requests" default="10"/>
+  <arg name="reverse_recovery_turn_attempt_grace" default="22.0"/>
+  <arg name="reverse_recovery_min_progress_distance" default="0.16"/>
   <arg name="enable_cmd_vel_limiter" default="false"/>
   <arg name="enable_depth_camera" default="false"/>
   <arg name="enable_laser_visualization" default="false"/>
@@ -85,6 +110,10 @@
     output="screen">
     <param name="keep_unpaused" value="true" />
     <param name="check_period" value="1.0" />
+    <param name="wait_for_controllers" value="true" />
+    <param name="controller_service" value="/r1/controller_manager/load_controller" />
+    <param name="controller_wait_timeout" value="45.0" />
+    <param name="controller_startup_delay" value="3.0" />
   </node>
 
   <param name="robot_description" textfile="$(find zebrat)/urdf/R1_rviz.urdf" />
@@ -105,9 +134,23 @@
     <param name="output_topic" value="/ackermann_cmd_nav" />
     <param name="wheelbase" value="0.41893" />
     <param name="max_speed" value="$(arg cmd_vel_max_linear_x)" />
+    <param name="max_reverse_speed" value="$(arg cmd_vel_max_reverse_x)" />
+    <param name="allow_reverse" value="$(arg planner_allow_reverse)" />
+    <param name="suppressed_reverse_behavior" value="$(arg planner_suppressed_reverse_behavior)" />
     <param name="max_steering_angle" value="$(arg ackermann_max_steering_angle)" />
     <param name="planner_max_steering_angle" value="$(arg ackermann_nav_max_steering_angle)" />
     <param name="min_turn_speed" value="$(arg ackermann_min_turn_speed)" />
+    <param name="steering_rate_limit" value="$(arg ackermann_steering_rate_limit)" />
+    <param name="steering_smoothing_alpha" value="$(arg ackermann_steering_smoothing_alpha)" />
+    <param name="steering_deadband" value="$(arg ackermann_steering_deadband)" />
+    <param name="goal_topic" value="/move_base/current_goal" />
+    <param name="global_plan_topic" value="/move_base/GlobalPlanner/plan" />
+    <param name="forward_assist_speed" value="0.08" />
+    <param name="forward_assist_carrot_dist" value="1.0" />
+    <param name="forward_assist_min_carrot_dist" value="0.35" />
+    <param name="forward_assist_max_age" value="2.0" />
+    <param name="forward_assist_steering_gain" value="1.0" />
+    <param name="angular_input_mode" value="$(eval 'steering_angle' if arg('local_planner') == 'teb' else 'yaw_rate')" />
   </node>
 
   <node
@@ -136,8 +179,38 @@
     <param name="front_angle" value="$(arg safety_front_angle)" />
     <param name="reaction_time" value="$(arg safety_reaction_time)" />
     <param name="max_deceleration" value="$(arg cmd_vel_max_linear_accel)" />
+    <param name="max_reverse_speed" value="$(arg cmd_vel_max_reverse_x)" />
     <param name="ttc_stop_time" value="$(arg safety_ttc_stop_time)" />
     <param name="cancel_on_emergency" value="$(arg safety_cancel_on_emergency)" />
+  </node>
+
+  <node
+    if="$(arg enable_reverse_recovery)"
+    name="ackermann_reverse_recovery"
+    pkg="zebrat"
+    type="ackermann_reverse_recovery.py"
+    output="screen">
+    <param name="teleop_topic" value="/ackermann_cmd_teleop" />
+    <param name="nav_command_topic" value="/ackermann_cmd_nav" />
+    <param name="raw_cmd_vel_topic" value="/cmd_vel_nav" />
+    <param name="goal_topic" value="/move_base/current_goal" />
+    <param name="reverse_speed" value="$(arg reverse_recovery_speed)" />
+    <param name="reverse_duration" value="$(arg reverse_recovery_duration)" />
+    <param name="reverse_steering_angle" value="$(arg reverse_recovery_steering_angle)" />
+    <param name="reverse_opposes_last_turn" value="true" />
+    <param name="max_reverses_per_goal" value="$(arg reverse_recovery_max_per_goal)" />
+    <param name="stuck_timeout" value="$(arg reverse_recovery_stuck_timeout)" />
+    <param name="min_goal_age" value="$(arg reverse_recovery_min_goal_age)" />
+    <param name="post_clear_wait" value="$(arg reverse_recovery_post_clear_wait)" />
+    <param name="min_forward_attempts" value="$(arg reverse_recovery_min_forward_attempts)" />
+    <param name="min_turn_attempts" value="$(arg reverse_recovery_min_turn_attempts)" />
+    <param name="min_planner_reverse_requests" value="$(arg reverse_recovery_min_planner_reverse_requests)" />
+    <param name="turn_attempt_grace" value="$(arg reverse_recovery_turn_attempt_grace)" />
+    <param name="min_progress_distance" value="$(arg reverse_recovery_min_progress_distance)" />
+    <param name="goal_progress_enabled" value="true" />
+    <param name="goal_progress_tolerance" value="$(arg reverse_recovery_min_progress_distance)" />
+    <param name="yaw_only_progress_enabled" value="false" />
+    <param name="front_angle" value="$(arg safety_front_angle)" />
   </node>
 
   <node
@@ -148,9 +221,15 @@
     <param name="input_topic" value="/ackermann_cmd" />
     <param name="wheelbase" value="0.41893" />
     <param name="front_track" value="0.26462" />
+    <param name="rear_track" value="0.24182" />
     <param name="wheel_radius" value="0.04075" />
+    <param name="drive_wheels" value="$(arg ackermann_drive_wheels)" />
     <param name="max_speed" value="$(arg cmd_vel_max_linear_x)" />
+    <param name="max_reverse_speed" value="$(arg cmd_vel_max_reverse_x)" />
     <param name="max_steering_angle" value="$(arg ackermann_max_steering_angle)" />
+    <param name="steering_trim" value="$(arg ackermann_steering_trim)" />
+    <param name="left_wheel_speed_scale" value="$(arg ackermann_left_wheel_speed_scale)" />
+    <param name="right_wheel_speed_scale" value="$(arg ackermann_right_wheel_speed_scale)" />
     <param name="command_timeout" value="$(arg cmd_vel_timeout)" />
   </node>
 
@@ -163,12 +242,31 @@
     args="-urdf -model r1 -param robot_description_gazebo -x $(arg x) -y $(arg y) -z $(arg z) -Y $(arg yaw)" />
 
   <node
+    if="$(eval arg('ackermann_drive_wheels') == 'rear')"
+    name="r1_controller_spawner"
+    pkg="controller_manager"
+    type="spawner"
+    ns="r1"
+    output="screen"
+    args="joint_state_controller front_left_steering_position_controller front_right_steering_position_controller rear_left_wheel_velocity_controller rear_right_wheel_velocity_controller" />
+
+  <node
+    if="$(eval arg('ackermann_drive_wheels') == 'front')"
     name="r1_controller_spawner"
     pkg="controller_manager"
     type="spawner"
     ns="r1"
     output="screen"
     args="joint_state_controller front_left_steering_position_controller front_right_steering_position_controller front_left_wheel_velocity_controller front_right_wheel_velocity_controller" />
+
+  <node
+    if="$(eval arg('ackermann_drive_wheels') == 'all')"
+    name="r1_controller_spawner"
+    pkg="controller_manager"
+    type="spawner"
+    ns="r1"
+    output="screen"
+    args="joint_state_controller front_left_steering_position_controller front_right_steering_position_controller front_left_wheel_velocity_controller front_right_wheel_velocity_controller rear_left_wheel_velocity_controller rear_right_wheel_velocity_controller" />
 
   <node
     name="gazebo_odometry_node"
@@ -240,7 +338,11 @@
           output="screen">
           <param name="base_frame" value="base_footprint" />
           <param name="odom_frame" value="odom" />
-          <param name="map_update_interval" value="2.0" />
+          <param name="map_update_interval" value="1.0" />
+          <param name="particles" value="50" />
+          <param name="linearUpdate" value="0.35" />
+          <param name="angularUpdate" value="0.20" />
+          <param name="resampleThreshold" value="0.5" />
           <param name="xmin" value="$(arg gmapping_xmin)" />
           <param name="ymin" value="$(arg gmapping_ymin)" />
           <param name="xmax" value="$(arg gmapping_xmax)" />
@@ -277,14 +379,20 @@
       <rosparam command="load" file="$(find zebrat)/config/navigation_global_costmap.yaml" ns="move_base" />
       <rosparam command="load" file="$(find zebrat)/config/navigation_local_costmap.yaml" ns="move_base" />
       <rosparam command="load" file="$(find zebrat)/config/navigation_move_base.yaml" ns="move_base" />
-      <rosparam command="load" file="$(find zebrat)/config/navigation_dwa.yaml" ns="move_base" />
+      <rosparam if="$(eval arg('local_planner') == 'dwa')" command="load" file="$(find zebrat)/config/navigation_dwa.yaml" ns="move_base" />
+      <rosparam if="$(eval arg('local_planner') == 'teb')" command="load" file="$(find zebrat)/config/navigation_teb.yaml" ns="move_base" />
 
-      <param name="move_base/DWAPlannerROS/max_vel_x" value="$(arg cmd_vel_max_linear_x)" />
-      <param name="move_base/DWAPlannerROS/max_vel_trans" value="$(arg cmd_vel_max_linear_x)" />
-      <param name="move_base/DWAPlannerROS/max_vel_theta" value="$(arg cmd_vel_max_angular_z)" />
-      <param name="move_base/DWAPlannerROS/acc_lim_x" value="$(arg cmd_vel_max_linear_accel)" />
-      <param name="move_base/DWAPlannerROS/acc_lim_trans" value="$(arg cmd_vel_max_linear_accel)" />
-      <param name="move_base/DWAPlannerROS/acc_lim_theta" value="$(arg cmd_vel_max_angular_accel)" />
+      <param name="move_base/base_local_planner" value="$(eval 'teb_local_planner/TebLocalPlannerROS' if arg('local_planner') == 'teb' else 'dwa_local_planner/DWAPlannerROS')" />
+      <param if="$(eval arg('local_planner') == 'dwa')" name="move_base/DWAPlannerROS/max_vel_x" value="$(arg cmd_vel_max_linear_x)" />
+      <param if="$(eval arg('local_planner') == 'dwa')" name="move_base/DWAPlannerROS/max_vel_trans" value="$(arg cmd_vel_max_linear_x)" />
+      <param if="$(eval arg('local_planner') == 'dwa')" name="move_base/DWAPlannerROS/max_vel_theta" value="$(arg cmd_vel_max_angular_z)" />
+      <param if="$(eval arg('local_planner') == 'dwa')" name="move_base/DWAPlannerROS/acc_lim_x" value="$(arg cmd_vel_max_linear_accel)" />
+      <param if="$(eval arg('local_planner') == 'dwa')" name="move_base/DWAPlannerROS/acc_lim_trans" value="$(arg cmd_vel_max_linear_accel)" />
+      <param if="$(eval arg('local_planner') == 'dwa')" name="move_base/DWAPlannerROS/acc_lim_theta" value="$(arg cmd_vel_max_angular_accel)" />
+      <param if="$(eval arg('local_planner') == 'teb')" name="move_base/TebLocalPlannerROS/max_vel_x" value="$(arg cmd_vel_max_linear_x)" />
+      <param if="$(eval arg('local_planner') == 'teb')" name="move_base/TebLocalPlannerROS/max_vel_x_backwards" value="$(arg planner_max_reverse_x)" />
+      <param if="$(eval arg('local_planner') == 'teb')" name="move_base/TebLocalPlannerROS/acc_lim_x" value="$(arg cmd_vel_max_linear_accel)" />
+      <param if="$(eval arg('local_planner') == 'teb')" name="move_base/TebLocalPlannerROS/acc_lim_theta" value="$(arg cmd_vel_max_angular_accel)" />
 
       <node
         name="move_base"

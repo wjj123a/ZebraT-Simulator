@@ -49,6 +49,17 @@ class SafeGoalRelay:
 
     def _goal_callback(self, message):
         resolved = self.resolver.resolve_pose(message, "simple goal")
+        if resolved.blocked:
+            self._active_adjusted_goal = None
+            self.cancel_publisher.publish(GoalID())
+            rospy.logerr(
+                "Rejected unsafe simple goal at (%.2f, %.2f): %s",
+                message.pose.position.x,
+                message.pose.position.y,
+                resolved.reason or "blocked",
+            )
+            return
+
         output = resolved.pose
         output.header.stamp = rospy.Time.now()
         self._active_adjusted_goal = output if resolved.adjusted and self.accept_xy_on_adjusted else None

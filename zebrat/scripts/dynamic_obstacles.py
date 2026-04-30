@@ -165,14 +165,6 @@ class DynamicObstacleController:
           </cylinder>
         </geometry>
       </collision>
-      <visual name="person_mesh">
-        <geometry>
-          <mesh>
-            <uri>model://person_walking/meshes/walking.dae</uri>
-            <scale>1 1 1</scale>
-          </mesh>
-        </geometry>
-      </visual>
       <visual name="sensor_body">
         <pose>0 0 %.3f 0 0 0</pose>
         <geometry>

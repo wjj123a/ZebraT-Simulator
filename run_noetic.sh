@@ -65,6 +65,7 @@ required_ros_packages=(
   gazebo_ros_control
   joint_state_controller
   position_controllers
+  teb_local_planner
   velocity_controllers
 )
 
@@ -78,29 +79,76 @@ done
 if [ "${#missing_ros_packages[@]}" -gt 0 ]; then
   echo "Missing required ROS packages: ${missing_ros_packages[*]}" >&2
   echo "Install them with:" >&2
-  echo "  sudo apt-get install ros-noetic-ackermann-msgs ros-noetic-effort-controllers ros-noetic-gazebo-ros-control ros-noetic-joint-state-controller ros-noetic-position-controllers ros-noetic-velocity-controllers" >&2
+  echo "  sudo apt-get install ros-noetic-ackermann-msgs ros-noetic-effort-controllers ros-noetic-gazebo-ros-control ros-noetic-joint-state-controller ros-noetic-position-controllers ros-noetic-teb-local-planner ros-noetic-velocity-controllers" >&2
   exit 1
 fi
 
 launch_robot="r1"
 launch_navigation="true"
 launch_world="$ROOT_DIR/zebrat/worlds/area.world"
+launch_run_mode="navigation"
 launch_navigation_mode="map"
 launch_navigation_backend="gmapping"
 launch_map_file="$ROOT_DIR/zebrat/maps/area.yaml"
 launch_rviz_config=""
+launch_gazebo_gui="true"
+launch_rviz="true"
+launch_headless="false"
 save_map="false"
 explicit_navigation_mode="false"
 explicit_map_file="false"
 explicit_rviz_config="false"
+explicit_run_mode="false"
+explicit_rtabmap_delete_db_on_start="false"
+rtabmap_delete_db_on_start="false"
+requested_run_mode=""
+pass_args=()
+
+normalize_navigation_mode() {
+  case "$1" in
+    map|navigation)
+      echo "map"
+      ;;
+    slam|mapping)
+      echo "slam"
+      ;;
+    *)
+      echo "Unsupported navigation mode '$1'. Expected map, navigation, slam, or mapping." >&2
+      return 1
+      ;;
+  esac
+}
+
+run_mode_from_navigation_mode() {
+  case "$1" in
+    map)
+      echo "navigation"
+      ;;
+    slam)
+      echo "mapping"
+      ;;
+  esac
+}
 
 for arg in "$@"; do
   case "$arg" in
+    mode:=*|run_mode:=*)
+      launch_run_mode="${arg#*:=}"
+      requested_run_mode="$launch_run_mode"
+      explicit_run_mode="true"
+      ;;
+    robot:=*)
+      launch_robot="${arg#robot:=}"
+      ;;
+    enable_navigation:=*)
+      launch_navigation="${arg#enable_navigation:=}"
+      ;;
     world_name:=*)
       launch_world="${arg#world_name:=}"
       ;;
     navigation_mode:=*)
-      launch_navigation_mode="${arg#navigation_mode:=}"
+      launch_navigation_mode="$(normalize_navigation_mode "${arg#navigation_mode:=}")"
+      launch_run_mode="$(run_mode_from_navigation_mode "$launch_navigation_mode")"
       explicit_navigation_mode="true"
       ;;
     navigation_backend:=*)
@@ -114,20 +162,77 @@ for arg in "$@"; do
       launch_rviz_config="${arg#rviz_config:=}"
       explicit_rviz_config="true"
       ;;
+    gui:=*)
+      launch_gazebo_gui="${arg#gui:=}"
+      ;;
+    rviz:=*)
+      launch_rviz="${arg#rviz:=}"
+      ;;
+    headless:=*)
+      launch_headless="${arg#headless:=}"
+      ;;
     save_map:=*)
       save_map="${arg#save_map:=}"
+      ;;
+    rtabmap_delete_db_on_start:=*)
+      rtabmap_delete_db_on_start="${arg#rtabmap_delete_db_on_start:=}"
+      explicit_rtabmap_delete_db_on_start="true"
+      ;;
+    *)
+      pass_args+=("$arg")
       ;;
   esac
 done
 
-if [[ "$launch_world" != *"area.world" && "$launch_navigation_mode" == "map" && "$explicit_navigation_mode" != "true" ]]; then
-  echo "Non-area world selected without an explicit navigation mode; falling back to slam." >&2
-  launch_navigation_mode="slam"
+case "$launch_run_mode" in
+  navigation|map)
+    launch_run_mode="navigation"
+    if [[ "$explicit_navigation_mode" != "true" ]]; then
+      launch_navigation_mode="map"
+    fi
+    ;;
+  mapping|slam)
+    launch_run_mode="mapping"
+    if [[ "$explicit_navigation_mode" != "true" ]]; then
+      launch_navigation_mode="slam"
+    fi
+    if [[ "$explicit_rtabmap_delete_db_on_start" != "true" ]]; then
+      rtabmap_delete_db_on_start="true"
+    fi
+    ;;
+  *)
+    echo "Unsupported mode '$launch_run_mode'. Expected mode:=navigation or mode:=mapping." >&2
+    exit 1
+    ;;
+esac
+
+if [[ "$explicit_run_mode" == "true" && "$explicit_navigation_mode" == "true" ]]; then
+  requested_navigation_mode="$(normalize_navigation_mode "$requested_run_mode")"
+  if [[ "$requested_navigation_mode" != "$launch_navigation_mode" ]]; then
+    echo "Conflicting mode arguments: mode:=$requested_run_mode implies navigation_mode:=$requested_navigation_mode, but navigation_mode:=$launch_navigation_mode was also set." >&2
+    exit 1
+  fi
 fi
 
-if [[ "$launch_navigation_mode" == "map" && ! -f "$launch_map_file" && "$explicit_map_file" != "true" ]]; then
-  echo "Missing map file $launch_map_file; falling back to slam." >&2
+if [[ "$launch_world" != *"area.world" && "$launch_navigation_mode" == "map" && "$explicit_navigation_mode" != "true" && "$explicit_run_mode" != "true" ]]; then
+  echo "Non-area world selected without an explicit navigation mode; falling back to slam." >&2
   launch_navigation_mode="slam"
+  launch_run_mode="mapping"
+fi
+
+if [[ "$launch_navigation_mode" == "map" && ! -f "$launch_map_file" ]]; then
+  if [[ "$explicit_navigation_mode" == "true" || "$explicit_run_mode" == "true" || "$explicit_map_file" == "true" ]]; then
+    echo "Missing map file $launch_map_file for navigation mode." >&2
+    echo "Use mode:=mapping for an empty map, or pass map_file:=/path/to/map.yaml." >&2
+    exit 1
+  else
+    echo "Missing map file $launch_map_file; falling back to slam." >&2
+    launch_navigation_mode="slam"
+    launch_run_mode="mapping"
+    if [[ "$explicit_rtabmap_delete_db_on_start" != "true" ]]; then
+      rtabmap_delete_db_on_start="true"
+    fi
+  fi
 fi
 
 if [[ "$explicit_rviz_config" != "true" ]]; then
@@ -172,4 +277,27 @@ cd "$ROOT_DIR"
 catkin_make
 source "$ROOT_DIR/devel/setup.bash"
 
-exec roslaunch zebrat zebrat_with_world.launch robot:="$launch_robot" world_name:="$launch_world" rviz:=true rviz_config:="$launch_rviz_config" enable_navigation:="$launch_navigation" navigation_mode:="$launch_navigation_mode" navigation_backend:="$launch_navigation_backend" map_file:="$launch_map_file" "$@"
+echo "Starting $launch_run_mode mode with navigation_mode:=$launch_navigation_mode" >&2
+if [[ "$launch_navigation_mode" == "map" ]]; then
+  echo "Loading map: $launch_map_file" >&2
+else
+  echo "Starting SLAM with an empty map; move_base remains enabled for navigation while mapping." >&2
+fi
+if [[ "$launch_gazebo_gui" != "true" ]]; then
+  echo "Gazebo GUI disabled by request; pass gui:=true to open it." >&2
+fi
+
+exec roslaunch zebrat zebrat_with_world.launch \
+  robot:="$launch_robot" \
+  world_name:="$launch_world" \
+  gui:="$launch_gazebo_gui" \
+  headless:="$launch_headless" \
+  rviz:="$launch_rviz" \
+  rviz_config:="$launch_rviz_config" \
+  enable_navigation:="$launch_navigation" \
+  navigation_mode:="$launch_navigation_mode" \
+  navigation_backend:="$launch_navigation_backend" \
+  rtabmap_delete_db_on_start:="$rtabmap_delete_db_on_start" \
+  map_file:="$launch_map_file" \
+  save_map:="$save_map" \
+  "${pass_args[@]}"

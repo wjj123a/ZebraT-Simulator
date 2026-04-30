@@ -17,6 +17,11 @@ import numpy as np
 import tf2_ros
 from tf.transformations import euler_from_quaternion, quaternion_from_euler, quaternion_matrix
 
+
+def _finite_values(*values):
+    return all(math.isfinite(value) for value in values)
+
+
 class OdometryNode:
     def __init__(self):
         self.model_name = rospy.get_param("~model_name", "r1")
@@ -28,17 +33,20 @@ class OdometryNode:
         self.base_link_z_offset = float(rospy.get_param("~base_link_z_offset", 0.04075))
         self.project_to_ground = bool(rospy.get_param("~project_to_ground", True))
         self.zero_lateral_twist = bool(rospy.get_param("~zero_lateral_twist", True))
+        self.publish_tf = bool(rospy.get_param("~publish_tf", True))
+        self.publish_rate = float(rospy.get_param("~publish_rate", 20.0))
+        self.max_abs_position = abs(float(rospy.get_param("~max_abs_position", 1000.0)))
+        self.linear_twist_deadband = abs(float(rospy.get_param("~linear_twist_deadband", 0.02)))
+        self.angular_twist_deadband = abs(float(rospy.get_param("~angular_twist_deadband", 0.004)))
 
         # init internals
         self.last_received_pose = Pose()
         self.last_received_twist = Twist()
-        self.last_recieved_stamp = None
+        self.last_received_stamp = None
+        self.last_published_stamp = None
 
         # Set publishers
         self.pub_odom = rospy.Publisher(self.odom_topic, Odometry, queue_size=1)
-
-        # Set the update rate
-        rospy.Timer(rospy.Duration(.05), self.timer_callback) # 20hz
 
         self.tf_pub = tf2_ros.TransformBroadcaster()
 
@@ -86,7 +94,48 @@ class OdometryNode:
         corrected.angular.x = 0.0
         corrected.angular.y = 0.0
         corrected.angular.z = twist.angular.z
+        if abs(corrected.linear.x) < self.linear_twist_deadband:
+            corrected.linear.x = 0.0
+        if abs(corrected.linear.y) < self.linear_twist_deadband:
+            corrected.linear.y = 0.0
+        if abs(corrected.angular.z) < self.angular_twist_deadband:
+            corrected.angular.z = 0.0
         return corrected
+
+    def _valid_pose(self, pose):
+        orientation_norm = math.sqrt(
+            pose.orientation.x * pose.orientation.x
+            + pose.orientation.y * pose.orientation.y
+            + pose.orientation.z * pose.orientation.z
+            + pose.orientation.w * pose.orientation.w
+        )
+        return (
+            _finite_values(
+                pose.position.x,
+                pose.position.y,
+                pose.position.z,
+                pose.orientation.x,
+                pose.orientation.y,
+                pose.orientation.z,
+                pose.orientation.w,
+                orientation_norm,
+            )
+            and orientation_norm > 1e-6
+            and abs(pose.position.x) <= self.max_abs_position
+            and abs(pose.position.y) <= self.max_abs_position
+            and abs(pose.position.z) <= self.max_abs_position
+        )
+
+    @staticmethod
+    def _valid_twist(twist):
+        return _finite_values(
+            twist.linear.x,
+            twist.linear.y,
+            twist.linear.z,
+            twist.angular.x,
+            twist.angular.y,
+            twist.angular.z,
+        )
 
     def sub_robot_pose_update(self, msg):
         for link_name in (self.base_link_name, self.base_footprint_name):
@@ -96,24 +145,40 @@ class OdometryNode:
             except ValueError:
                 continue
 
-            self.last_received_pose = self._pose_as_base_footprint(msg.pose[arrayIndex], link_name)
-            self.last_received_twist = self._twist_as_base_footprint(
+            pose = self._pose_as_base_footprint(msg.pose[arrayIndex], link_name)
+            twist = self._twist_as_base_footprint(
                 msg.twist[arrayIndex],
                 msg.pose[arrayIndex],
                 link_name,
             )
-            self.last_recieved_stamp = rospy.Time.now()
+            if not self._valid_pose(pose) or not self._valid_twist(twist):
+                rospy.logwarn_throttle(2.0, "Ignoring invalid Gazebo odometry sample for %s", qualified)
+                return
+
+            self.last_received_pose = pose
+            self.last_received_twist = twist
+            stamp = rospy.Time.now()
+            if self.last_published_stamp is not None and stamp <= self.last_published_stamp:
+                return
+            if (
+                self.last_published_stamp is not None
+                and self.publish_rate > 0.0
+                and (stamp - self.last_published_stamp).to_sec() < 1.0 / self.publish_rate
+            ):
+                return
+            self.last_received_stamp = stamp
+            self._publish_odometry()
             return
 
-    def timer_callback(self, event):
+    def _publish_odometry(self):
         if rospy.is_shutdown():
             return
 
-        if self.last_recieved_stamp is None:
+        if self.last_received_stamp is None:
             return
 
         cmd = Odometry()
-        cmd.header.stamp = self.last_recieved_stamp
+        cmd.header.stamp = self.last_received_stamp
         cmd.header.frame_id = self.odom_frame_id
         cmd.child_frame_id = self.child_frame_id
         cmd.pose.pose = self.last_received_pose
@@ -136,22 +201,24 @@ class OdometryNode:
             self.pub_odom.publish(cmd)
         except rospy.ROSException:
             return
+        self.last_published_stamp = cmd.header.stamp
 
-        tf = TransformStamped(
-            header=Header(
-                frame_id=cmd.header.frame_id,
-                stamp=cmd.header.stamp
-            ),
-            child_frame_id=cmd.child_frame_id,
-            transform=Transform(
-                translation=cmd.pose.pose.position,
-                rotation=cmd.pose.pose.orientation
+        if self.publish_tf:
+            tf = TransformStamped(
+                header=Header(
+                    frame_id=cmd.header.frame_id,
+                    stamp=cmd.header.stamp
+                ),
+                child_frame_id=cmd.child_frame_id,
+                transform=Transform(
+                    translation=cmd.pose.pose.position,
+                    rotation=cmd.pose.pose.orientation
+                )
             )
-        )
-        try:
-            self.tf_pub.sendTransform(tf)
-        except rospy.ROSException:
-            return
+            try:
+                self.tf_pub.sendTransform(tf)
+            except rospy.ROSException:
+                return
 
 # Start the node
 if __name__ == '__main__':

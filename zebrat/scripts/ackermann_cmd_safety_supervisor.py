@@ -10,6 +10,10 @@ from actionlib_msgs.msg import GoalID
 from sensor_msgs.msg import LaserScan
 
 
+def _clamp(value, lower, upper):
+    return max(lower, min(upper, value))
+
+
 def _command_nonzero(message):
     return abs(message.drive.speed) > 1e-4
 
@@ -34,6 +38,7 @@ class AckermannCmdSafetySupervisor:
         self.slowdown_distance = float(rospy.get_param("~slowdown_distance", 0.85))
         self.reaction_time = float(rospy.get_param("~reaction_time", 0.35))
         self.max_deceleration = max(0.05, float(rospy.get_param("~max_deceleration", 0.45)))
+        self.max_reverse_speed = abs(float(rospy.get_param("~max_reverse_speed", 0.08)))
         self.ttc_stop_time = float(rospy.get_param("~ttc_stop_time", 1.0))
         self.scan_timeout = float(rospy.get_param("~scan_timeout", 0.5))
         self.cancel_on_emergency = bool(rospy.get_param("~cancel_on_emergency", False))
@@ -146,6 +151,13 @@ class AckermannCmdSafetySupervisor:
         limited.drive.speed *= scale
         return limited
 
+    def _limit_reverse_speed(self, command):
+        if command.drive.speed >= 0.0:
+            return command
+        limited = copy.deepcopy(command)
+        limited.drive.speed = _clamp(command.drive.speed, -self.max_reverse_speed, 0.0)
+        return limited
+
     def _publish_emergency_stop(self):
         self._publisher.publish(_zero_command(self.frame_id))
         if self.cancel_on_emergency and not self._emergency_active:
@@ -157,7 +169,7 @@ class AckermannCmdSafetySupervisor:
             self._publish_emergency_stop()
             return
 
-        command = self._apply_slowdown(message)
+        command = self._limit_reverse_speed(self._apply_slowdown(message))
         self._emergency_active = False
         command.header.stamp = rospy.Time.now()
         if not command.header.frame_id:
