@@ -41,7 +41,7 @@
   <arg name="safe_goal_dynamic_obstacle_path_inflation" default="0.55"/>
   <arg name="safe_goal_dynamic_obstacle_prediction_timeout" default="1.0"/>
   <arg name="safe_goal_dynamic_obstacle_prediction_horizon" default="3.0"/>
-  <arg name="safe_goal_accept_xy_on_adjusted" default="true"/>
+  <arg name="safe_goal_accept_xy_on_adjusted" default="false"/>
   <arg name="safe_goal_adjusted_xy_tolerance" default="0.25"/>
   <arg name="enable_dynamic_obstacles" default="true"/>
   <arg name="dynamic_obstacle_profile" default="area_mixed"/>

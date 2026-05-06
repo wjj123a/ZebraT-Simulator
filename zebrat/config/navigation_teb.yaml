@@ -6,7 +6,7 @@ TebLocalPlannerROS:
   dt_ref: 0.34
   dt_hysteresis: 0.08
   max_samples: 500
-  global_plan_overwrite_orientation: true
+  global_plan_overwrite_orientation: false
   allow_init_with_backwards_motion: true
   max_global_plan_lookahead_dist: 3.2
   global_plan_viapoint_sep: 0.45
@@ -26,8 +26,8 @@ TebLocalPlannerROS:
   wheelbase: 0.41893
   cmd_angle_instead_rotvel: true
 
-  xy_goal_tolerance: 0.45
-  yaw_goal_tolerance: 1.57
+  xy_goal_tolerance: 0.30
+  yaw_goal_tolerance: 0.35
   free_goal_vel: false
   complete_global_plan: true
 

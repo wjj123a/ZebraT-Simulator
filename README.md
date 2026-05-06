@@ -39,9 +39,10 @@ blocked, unknown, or inside a configured dynamic obstacle route.
 
 Two navigation modes are supported.
 
-### Static Map Mode
+### SLAM Mode
 
-Default mode for `area.world`.
+Default mode. Use this when you expect unexplored cells in RViz to become white/free as the
+laser scans the environment. The default SLAM backend remains `gmapping`:
 
 ```bash
 bash run_noetic.sh
@@ -50,23 +51,30 @@ bash run_noetic.sh
 Equivalent explicit form:
 
 ```bash
-bash run_noetic.sh navigation_mode:=map map_file:=$(pwd)/zebrat/maps/area.yaml
+bash run_noetic.sh navigation_mode:=slam
 ```
+
+In SLAM mode, `/map` is published by `slam_gmapping` or RTAB-Map instead of
+`map_server`, so it updates while the robot moves. Cells become free where laser
+rays observe free space; simply driving over a cell is not enough if the laser
+does not scan that area.
 
 This uses:
 
-- `map_server`
-- `amcl`
+- `slam_gmapping`
 - `move_base`
 - `global_planner/GlobalPlanner`
 - `dwa_local_planner/DWAPlannerROS`
 
-### SLAM Mode
+### Static Map Mode
 
-For rebuilding a map or running on worlds without a prepared map. The default SLAM backend remains `gmapping`:
+Use this when you want localization against an existing saved map. This mode loads
+`zebrat/maps/area.yaml` through `map_server`; `/map` is a static occupancy grid
+used by AMCL for localization. Unknown cells in RViz will not turn white as the
+robot drives because this mode does not rebuild the map.
 
 ```bash
-bash run_noetic.sh navigation_mode:=slam
+bash run_noetic.sh navigation_mode:=map map_file:=$(pwd)/zebrat/maps/area.yaml
 ```
 
 To use the RGB-D + 2D laser fusion backend powered by RTAB-Map:
