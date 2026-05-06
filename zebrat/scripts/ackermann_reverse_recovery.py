@@ -74,6 +74,13 @@ class AckermannReverseRecovery:
         self.front_obstacle_distance = float(rospy.get_param("~front_obstacle_distance", 0.65))
         self.front_obstacle_wait = float(rospy.get_param("~front_obstacle_wait", 12.0))
         self.front_angle = float(rospy.get_param("~front_angle", 0.65))
+        self.rear_angle = float(rospy.get_param("~rear_angle", self.front_angle))
+        self.rear_clear_distance = float(rospy.get_param("~rear_clear_distance", 0.75))
+        self.scan_timeout = float(rospy.get_param("~scan_timeout", 0.5))
+        self.require_full_scan_for_reverse = bool(
+            rospy.get_param("~require_full_scan_for_reverse", True)
+        )
+        self.min_full_scan_angle = float(rospy.get_param("~min_full_scan_angle", 6.0))
         self.tick_period = float(rospy.get_param("~tick_period", 0.10))
 
         self._publisher = rospy.Publisher(self.teleop_topic, AckermannDriveStamped, queue_size=1)
@@ -95,6 +102,9 @@ class AckermannReverseRecovery:
         self._best_goal_distance = None
         self._last_progress_wall = 0.0
         self._front_min = float("inf")
+        self._rear_min = float("inf")
+        self._last_scan_wall = 0.0
+        self._scan_angle_span = 0.0
         self._front_obstacle_since = None
         self._commands = deque(maxlen=300)
         self._raw_commands = deque(maxlen=300)
@@ -166,14 +176,20 @@ class AckermannReverseRecovery:
             self._pose = _pose_tuple(message.pose.pose)
 
     def _scan_callback(self, message):
-        ranges = []
+        front_ranges = []
+        rear_ranges = []
         for index, value in enumerate(message.ranges):
             if not math.isfinite(value) or value <= 0.0:
                 continue
             angle = message.angle_min + index * message.angle_increment
             if abs(angle) <= self.front_angle:
-                ranges.append(value)
-        self._front_min = min(ranges) if ranges else float("inf")
+                front_ranges.append(value)
+            if abs(abs(angle) - math.pi) <= self.rear_angle:
+                rear_ranges.append(value)
+        self._front_min = min(front_ranges) if front_ranges else float("inf")
+        self._rear_min = min(rear_ranges) if rear_ranges else float("inf")
+        self._scan_angle_span = abs(message.angle_max - message.angle_min)
+        self._last_scan_wall = time.monotonic()
 
     def _command_callback(self, message):
         self._commands.append(
@@ -323,6 +339,21 @@ class AckermannReverseRecovery:
         else:
             self._front_obstacle_since = None
 
+        if not self._rear_is_clear(now):
+            return False
+
+        return True
+
+    def _rear_is_clear(self, now):
+        if self._last_scan_wall <= 0.0 or now - self._last_scan_wall > self.scan_timeout:
+            self._defer(now, "waiting for fresh scan before reverse")
+            return False
+        if self.require_full_scan_for_reverse and self._scan_angle_span < self.min_full_scan_angle:
+            self._defer(now, "360-degree scan coverage required before reverse")
+            return False
+        if self._rear_min <= self.rear_clear_distance:
+            self._defer(now, "rear obstacle too close for reverse")
+            return False
         return True
 
     def _request_costmap_clear(self, now):

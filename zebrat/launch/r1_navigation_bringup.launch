@@ -24,20 +24,23 @@
   <arg name="safe_goal_search_radius" default="2.0"/>
   <arg name="safe_goal_search_step" default="0.10"/>
   <arg name="safe_goal_target_check_radius" default="0.35"/>
-  <arg name="safe_goal_use_dynamic_routes" default="true"/>
+  <arg name="safe_goal_use_dynamic_routes" default="false"/>
   <arg name="safe_goal_dynamic_route_inflation" default="0.42"/>
   <arg name="safe_goal_use_dynamic_obstacle_predictions" default="true"/>
-  <arg name="safe_goal_dynamic_obstacle_path_inflation" default="0.42"/>
+  <arg name="safe_goal_dynamic_obstacle_path_inflation" default="0.55"/>
   <arg name="safe_goal_dynamic_obstacle_prediction_timeout" default="1.0"/>
-  <arg name="safe_goal_dynamic_obstacle_prediction_horizon" default="1.5"/>
+  <arg name="safe_goal_dynamic_obstacle_prediction_horizon" default="3.0"/>
   <arg name="safe_goal_accept_xy_on_adjusted" default="true"/>
   <arg name="safe_goal_adjusted_xy_tolerance" default="0.25"/>
   <arg name="enable_dynamic_obstacles" default="true"/>
   <arg name="dynamic_obstacle_profile" default="area_mixed"/>
   <arg name="dynamic_obstacle_speed_scale" default="1.0"/>
   <arg name="enable_dynamic_obstacle_predictions" default="true"/>
+  <arg name="dynamic_obstacle_prediction_source" default="scan"/>
   <arg name="dynamic_obstacle_prediction_topic" default="/move_base/TebLocalPlannerROS/obstacles"/>
   <arg name="dynamic_obstacle_prediction_rate" default="12.0"/>
+  <arg name="dynamic_obstacle_prediction_scan_topic" default="/scan"/>
+  <arg name="dynamic_obstacle_prediction_frame" default="map"/>
   <arg name="navigation_backend" default="gmapping"/>
   <arg name="navigation_mode" default="map"/>
   <arg name="rtabmap_enable_ekf_odom" default="false"/>
@@ -56,9 +59,9 @@
   <arg name="yaw" default="$(eval 0.0 if arg('world_profile') not in ['racecar_parking_1'] else 1.57)"/>
   <arg name="cmd_vel_max_linear_x" default="0.22"/>
   <arg name="cmd_vel_max_reverse_x" default="0.06"/>
-  <arg name="planner_max_reverse_x" default="0.01"/>
-  <arg name="planner_allow_reverse" default="false"/>
-  <arg name="planner_suppressed_reverse_behavior" default="forward_crawl"/>
+  <arg name="planner_max_reverse_x" default="0.06"/>
+  <arg name="planner_allow_reverse" default="true"/>
+  <arg name="planner_suppressed_reverse_behavior" default="stop"/>
   <arg name="cmd_vel_max_linear_y" default="0.0"/>
   <arg name="cmd_vel_max_angular_z" default="0.12"/>
   <arg name="cmd_vel_max_linear_accel" default="0.40"/>
@@ -75,17 +78,20 @@
   <arg name="ackermann_steering_smoothing_alpha" default="0.30"/>
   <arg name="ackermann_steering_deadband" default="0.032"/>
   <arg name="enable_safety_supervisor" default="true"/>
-  <arg name="safety_hard_stop_distance" default="0.25"/>
-  <arg name="safety_slowdown_distance" default="0.65"/>
-  <arg name="safety_front_angle" default="0.55"/>
-  <arg name="safety_reaction_time" default="0.25"/>
-  <arg name="safety_ttc_stop_time" default="0.45"/>
+  <arg name="safety_hard_stop_distance" default="0.32"/>
+  <arg name="safety_slowdown_distance" default="0.95"/>
+  <arg name="safety_front_angle" default="1.20"/>
+  <arg name="safety_rear_angle" default="1.20"/>
+  <arg name="safety_require_full_scan_for_reverse" default="true"/>
+  <arg name="safety_reaction_time" default="0.45"/>
+  <arg name="safety_ttc_stop_time" default="0.80"/>
   <arg name="safety_cancel_on_emergency" default="false"/>
   <arg name="enable_reverse_recovery" default="true"/>
   <arg name="reverse_recovery_speed" default="0.05"/>
   <arg name="reverse_recovery_duration" default="0.8"/>
   <arg name="reverse_recovery_max_per_goal" default="2"/>
   <arg name="reverse_recovery_steering_angle" default="0.35"/>
+  <arg name="reverse_recovery_rear_clear_distance" default="0.75"/>
   <arg name="reverse_recovery_stuck_timeout" default="26.0"/>
   <arg name="reverse_recovery_min_goal_age" default="35.0"/>
   <arg name="reverse_recovery_post_clear_wait" default="10.0"/>
@@ -184,6 +190,8 @@
     <param name="hard_stop_distance" value="$(arg safety_hard_stop_distance)" />
     <param name="slowdown_distance" value="$(arg safety_slowdown_distance)" />
     <param name="front_angle" value="$(arg safety_front_angle)" />
+    <param name="rear_angle" value="$(arg safety_rear_angle)" />
+    <param name="require_full_scan_for_reverse" value="$(arg safety_require_full_scan_for_reverse)" />
     <param name="reaction_time" value="$(arg safety_reaction_time)" />
     <param name="max_deceleration" value="$(arg cmd_vel_max_linear_accel)" />
     <param name="max_reverse_speed" value="$(arg cmd_vel_max_reverse_x)" />
@@ -218,6 +226,9 @@
     <param name="goal_progress_tolerance" value="$(arg reverse_recovery_min_progress_distance)" />
     <param name="yaw_only_progress_enabled" value="false" />
     <param name="front_angle" value="$(arg safety_front_angle)" />
+    <param name="rear_angle" value="$(arg safety_rear_angle)" />
+    <param name="rear_clear_distance" value="$(arg reverse_recovery_rear_clear_distance)" />
+    <param name="require_full_scan_for_reverse" value="$(arg safety_require_full_scan_for_reverse)" />
   </node>
 
   <node
@@ -292,8 +303,11 @@
     <arg name="profile" value="$(arg dynamic_obstacle_profile)" />
     <arg name="speed_scale" value="$(arg dynamic_obstacle_speed_scale)" />
     <arg name="enable_predictions" value="$(arg enable_dynamic_obstacle_predictions)" />
+    <arg name="prediction_source" value="$(arg dynamic_obstacle_prediction_source)" />
     <arg name="prediction_topic" value="$(arg dynamic_obstacle_prediction_topic)" />
     <arg name="prediction_rate" value="$(arg dynamic_obstacle_prediction_rate)" />
+    <arg name="prediction_scan_topic" value="$(arg dynamic_obstacle_prediction_scan_topic)" />
+    <arg name="prediction_frame" value="$(arg dynamic_obstacle_prediction_frame)" />
   </include>
 
   <node

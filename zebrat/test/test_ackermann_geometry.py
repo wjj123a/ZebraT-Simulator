@@ -2,6 +2,7 @@
 
 import os
 import sys
+import time
 import unittest
 from collections import deque
 
@@ -12,6 +13,8 @@ SCRIPT_DIR = os.path.join(os.path.dirname(__file__), "..", "scripts")
 sys.path.insert(0, os.path.abspath(SCRIPT_DIR))
 
 from r1_ackermann_controller import R1AckermannController  # noqa: E402
+from ackermann_cmd_safety_supervisor import AckermannCmdSafetySupervisor  # noqa: E402
+from ackermann_cmd_safety_supervisor import DirectionalScanState  # noqa: E402
 from ackermann_reverse_recovery import AckermannReverseRecovery  # noqa: E402
 from twist_to_ackermann import TwistToAckermann  # noqa: E402
 
@@ -124,6 +127,13 @@ class ReverseRecoveryPriorityTest(unittest.TestCase):
         recovery.min_progress_yaw = 0.45
         recovery.yaw_only_progress_enabled = False
         recovery._front_min = float("inf")
+        recovery._rear_min = float("inf")
+        recovery._last_scan_wall = now
+        recovery._scan_angle_span = 6.28
+        recovery.rear_clear_distance = 0.75
+        recovery.scan_timeout = 0.5
+        recovery.require_full_scan_for_reverse = True
+        recovery.min_full_scan_angle = 6.0
         recovery.front_obstacle_distance = 0.65
         recovery._front_obstacle_since = None
         recovery.front_obstacle_wait = 12.0
@@ -167,6 +177,18 @@ class ReverseRecoveryPriorityTest(unittest.TestCase):
         now = 100.0
         recovery = self._recovery(now=now, clear_requested=True, clear_age=12.0)
         self.assertTrue(recovery._should_reverse(now))
+
+    def test_reverse_recovery_requires_full_scan_coverage(self):
+        now = 100.0
+        recovery = self._recovery(now=now)
+        recovery._scan_angle_span = 4.70
+        self.assertFalse(recovery._should_reverse(now))
+
+    def test_reverse_recovery_waits_when_rear_obstacle_is_close(self):
+        now = 100.0
+        recovery = self._recovery(now=now)
+        recovery._rear_min = 0.40
+        self.assertFalse(recovery._should_reverse(now))
 
     def test_yaw_only_motion_does_not_count_as_progress_by_default(self):
         now = 100.0
@@ -213,6 +235,67 @@ class TwistToAckermannReverseGateTest(unittest.TestCase):
         converter.angular_input_mode = "yaw_rate"
         steering = converter._maybe_flip_suppressed_reverse_steering(0.30, True)
         self.assertAlmostEqual(steering, 0.30)
+
+
+class AckermannSafetySupervisorReverseTest(unittest.TestCase):
+    def setUp(self):
+        rospy_module = AckermannCmdSafetySupervisor.__init__.__globals__["rospy"]
+        self._original_logwarn_throttle = rospy_module.logwarn_throttle
+        rospy_module.logwarn_throttle = lambda *_args, **_kwargs: None
+
+    def tearDown(self):
+        AckermannCmdSafetySupervisor.__init__.__globals__["rospy"].logwarn_throttle = (
+            self._original_logwarn_throttle
+        )
+
+    def _supervisor(self, now=None):
+        if now is None:
+            now = time.monotonic()
+        supervisor = AckermannCmdSafetySupervisor.__new__(AckermannCmdSafetySupervisor)
+        supervisor.scan_topic = "/scan"
+        supervisor.hard_stop_distance = 0.32
+        supervisor.slowdown_distance = 0.95
+        supervisor.reaction_time = 0.45
+        supervisor.max_deceleration = 0.40
+        supervisor.ttc_stop_time = 0.80
+        supervisor.scan_timeout = 0.5
+        supervisor.require_full_scan_for_reverse = True
+        supervisor.min_full_scan_angle = 6.0
+        supervisor._front = DirectionalScanState()
+        supervisor._rear = DirectionalScanState()
+        supervisor._front.minimum = float("inf")
+        supervisor._front.last_scan_wall = now
+        supervisor._rear.minimum = float("inf")
+        supervisor._rear.last_scan_wall = now
+        supervisor._scan_angle_span = 6.28
+        return supervisor
+
+    def test_reverse_command_is_stopped_without_full_scan_coverage(self):
+        supervisor = self._supervisor()
+        supervisor._scan_angle_span = 4.70
+        command = AckermannDriveStamped()
+        command.drive.speed = -0.03
+
+        self.assertTrue(supervisor._should_emergency_stop(command))
+
+    def test_reverse_command_stops_for_rear_obstacle(self):
+        supervisor = self._supervisor()
+        supervisor._rear.minimum = 0.25
+        command = AckermannDriveStamped()
+        command.drive.speed = -0.03
+
+        self.assertTrue(supervisor._should_emergency_stop(command))
+
+    def test_reverse_slowdown_uses_rear_clearance(self):
+        supervisor = self._supervisor()
+        supervisor._rear.minimum = 0.50
+        command = AckermannDriveStamped()
+        command.drive.speed = -0.06
+
+        slowed = supervisor._apply_slowdown(command)
+
+        self.assertLess(abs(slowed.drive.speed), abs(command.drive.speed))
+        self.assertLess(slowed.drive.speed, 0.0)
 
 
 if __name__ == "__main__":

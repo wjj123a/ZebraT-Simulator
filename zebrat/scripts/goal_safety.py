@@ -39,7 +39,7 @@ class CostmapGoalResolver:
         wait_timeout=6.0,
         wait_check_period=0.5,
         costmap_wait_timeout=10.0,
-        use_dynamic_routes=True,
+        use_dynamic_routes=False,
         dynamic_route_inflation=0.42,
         use_dynamic_obstacle_predictions=True,
         dynamic_obstacle_topics=None,

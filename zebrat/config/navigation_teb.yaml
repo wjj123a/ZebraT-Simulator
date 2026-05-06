@@ -7,7 +7,7 @@ TebLocalPlannerROS:
   dt_hysteresis: 0.08
   max_samples: 500
   global_plan_overwrite_orientation: true
-  allow_init_with_backwards_motion: false
+  allow_init_with_backwards_motion: true
   max_global_plan_lookahead_dist: 3.2
   global_plan_viapoint_sep: 0.45
   global_plan_prune_distance: 0.7
@@ -16,7 +16,7 @@ TebLocalPlannerROS:
   publish_feedback: false
 
   max_vel_x: 0.22
-  max_vel_x_backwards: 0.01
+  max_vel_x_backwards: 0.06
   max_vel_y: 0.0
   max_vel_theta: 0.55
   acc_lim_x: 0.40
@@ -35,12 +35,12 @@ TebLocalPlannerROS:
     type: polygon
     vertices: [[0.30, 0.18], [0.30, -0.18], [-0.30, -0.18], [-0.30, 0.18]]
 
-  min_obstacle_dist: 0.32
-  inflation_dist: 0.52
+  min_obstacle_dist: 0.36
+  inflation_dist: 0.62
   include_costmap_obstacles: true
   costmap_obstacles_behind_robot_dist: 1.0
   obstacle_poses_affected: 15
-  dynamic_obstacle_inflation_dist: 0.65
+  dynamic_obstacle_inflation_dist: 0.85
   include_dynamic_obstacles: true
 
   no_inner_iterations: 6
@@ -53,13 +53,13 @@ TebLocalPlannerROS:
   weight_acc_lim_x: 1.0
   weight_acc_lim_theta: 2.0
   weight_kinematics_nh: 1000.0
-  weight_kinematics_forward_drive: 1000.0
+  weight_kinematics_forward_drive: 12.0
   weight_kinematics_turning_radius: 16.0
   weight_optimaltime: 1.0
   weight_shortest_path: 0.0
   weight_obstacle: 50.0
   weight_inflation: 0.2
-  weight_dynamic_obstacle: 70.0
+  weight_dynamic_obstacle: 120.0
   weight_dynamic_obstacle_inflation: 0.2
   weight_viapoint: 0.8
 

@@ -188,6 +188,7 @@ catkin_install_python(PROGRAMS
   scripts/publish_initial_pose.py
   scripts/r1_ackermann_controller.py
   scripts/safe_goal_relay.py
+  scripts/scan_dynamic_obstacle_predictions.py
   scripts/pose_pub.py
   scripts/save_map_snapshot.py
   scripts/servo_commands.py
@@ -204,6 +205,7 @@ if(CATKIN_ENABLE_TESTING)
   catkin_add_nosetests(test/test_ackermann_geometry.py)
   catkin_add_nosetests(test/test_dynamic_obstacle_predictions.py)
   catkin_add_nosetests(test/test_goal_safety.py)
+  catkin_add_nosetests(test/test_scan_dynamic_obstacle_predictions.py)
 endif()
 
 ## Mark executables for installation
