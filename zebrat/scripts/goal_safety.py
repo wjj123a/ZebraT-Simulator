@@ -437,7 +437,7 @@ class CostmapGoalResolver:
                     return candidate
         return None
 
-    def resolve_pose(self, pose, name="goal"):
+    def resolve_pose(self, pose, name="goal", wait=True, log_blocked=True):
         self.wait_for_costmaps()
         if not self._costmaps:
             rospy.logwarn("No costmap is available; using requested %s unchanged", name)
@@ -446,37 +446,40 @@ class CostmapGoalResolver:
         if self.is_pose_safe(pose):
             return ResolvedGoal(pose)
 
-        rospy.logwarn(
-            "Requested %s at (%.2f, %.2f) is occupied or unknown; waiting %.1fs before searching nearby",
-            name,
-            pose.pose.position.x,
-            pose.pose.position.y,
-            self.wait_timeout,
-        )
-        deadline = time.monotonic() + self.wait_timeout
         waited = False
-        while not rospy.is_shutdown() and time.monotonic() < deadline:
-            time.sleep(self.wait_check_period)
-            waited = True
-            if self.is_pose_safe(pose):
-                rospy.loginfo("Requested %s became free after waiting", name)
-                return ResolvedGoal(pose, waited=waited, reason="became_free")
+        if wait and self.wait_timeout > 0.0:
+            rospy.logwarn(
+                "Requested %s at (%.2f, %.2f) is occupied or unknown; waiting %.1fs before searching nearby",
+                name,
+                pose.pose.position.x,
+                pose.pose.position.y,
+                self.wait_timeout,
+            )
+            deadline = time.monotonic() + self.wait_timeout
+            while not rospy.is_shutdown() and time.monotonic() < deadline:
+                time.sleep(self.wait_check_period)
+                waited = True
+                if self.is_pose_safe(pose):
+                    rospy.loginfo("Requested %s became free after waiting", name)
+                    return ResolvedGoal(pose, waited=waited, reason="became_free")
 
         candidate = self.find_nearest_safe_pose(pose)
         if candidate is None:
-            rospy.logerr(
-                "No safe replacement found for %s within %.2fm; rejecting unsafe target",
-                name,
-                self.search_radius,
-            )
+            if log_blocked:
+                rospy.logerr(
+                    "No safe replacement found for %s within %.2fm; rejecting unsafe target",
+                    name,
+                    self.search_radius,
+                )
             return ResolvedGoal(pose, waited=waited, reason="no_replacement", blocked=True)
 
-        rospy.logwarn(
-            "Adjusted %s from (%.2f, %.2f) to nearest safe pose (%.2f, %.2f)",
-            name,
-            pose.pose.position.x,
-            pose.pose.position.y,
-            candidate.pose.position.x,
-            candidate.pose.position.y,
-        )
+        if log_blocked:
+            rospy.logwarn(
+                "Adjusted %s from (%.2f, %.2f) to nearest safe pose (%.2f, %.2f)",
+                name,
+                pose.pose.position.x,
+                pose.pose.position.y,
+                candidate.pose.position.x,
+                candidate.pose.position.y,
+            )
         return ResolvedGoal(candidate, adjusted=True, waited=waited, reason="relocated")

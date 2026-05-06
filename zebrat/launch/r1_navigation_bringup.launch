@@ -32,6 +32,9 @@
   <arg name="safe_goal_dynamic_obstacle_prediction_horizon" default="3.0"/>
   <arg name="safe_goal_accept_xy_on_adjusted" default="false"/>
   <arg name="safe_goal_adjusted_xy_tolerance" default="0.25"/>
+  <arg name="safe_goal_retry_rejected_goals" default="true"/>
+  <arg name="safe_goal_retry_timeout" default="20.0"/>
+  <arg name="safe_goal_retry_period" default="1.0"/>
   <arg name="enable_dynamic_obstacles" default="true"/>
   <arg name="dynamic_obstacle_profile" default="area_mixed"/>
   <arg name="dynamic_obstacle_speed_scale" default="1.0"/>
@@ -58,6 +61,7 @@
   <arg name="z" default="0.04075"/>
   <arg name="yaw" default="$(eval 0.0 if arg('world_profile') not in ['racecar_parking_1'] else 1.57)"/>
   <arg name="cmd_vel_max_linear_x" default="0.22"/>
+  <arg name="ackermann_controller_max_speed" default="0.30"/>
   <arg name="cmd_vel_max_reverse_x" default="0.06"/>
   <arg name="planner_max_reverse_x" default="0.06"/>
   <arg name="planner_allow_reverse" default="true"/>
@@ -86,6 +90,13 @@
   <arg name="safety_reaction_time" default="0.45"/>
   <arg name="safety_ttc_stop_time" default="0.80"/>
   <arg name="safety_cancel_on_emergency" default="false"/>
+  <arg name="safety_enable_dynamic_escape_boost" default="true"/>
+  <arg name="safety_dynamic_escape_speed" default="0.30"/>
+  <arg name="safety_dynamic_escape_prediction_horizon" default="1.20"/>
+  <arg name="safety_dynamic_escape_threat_radius" default="0.55"/>
+  <arg name="safety_dynamic_escape_min_forward_clearance" default="1.05"/>
+  <arg name="safety_dynamic_escape_obstacle_timeout" default="0.80"/>
+  <arg name="safety_dynamic_escape_min_obstacle_speed" default="0.10"/>
   <arg name="enable_reverse_recovery" default="true"/>
   <arg name="reverse_recovery_speed" default="0.05"/>
   <arg name="reverse_recovery_duration" default="0.8"/>
@@ -197,6 +208,14 @@
     <param name="max_reverse_speed" value="$(arg cmd_vel_max_reverse_x)" />
     <param name="ttc_stop_time" value="$(arg safety_ttc_stop_time)" />
     <param name="cancel_on_emergency" value="$(arg safety_cancel_on_emergency)" />
+    <param name="enable_dynamic_escape_boost" value="$(arg safety_enable_dynamic_escape_boost)" />
+    <param name="dynamic_obstacle_topic" value="$(arg dynamic_obstacle_prediction_topic)" />
+    <param name="dynamic_obstacle_timeout" value="$(arg safety_dynamic_escape_obstacle_timeout)" />
+    <param name="escape_prediction_horizon" value="$(arg safety_dynamic_escape_prediction_horizon)" />
+    <param name="escape_threat_radius" value="$(arg safety_dynamic_escape_threat_radius)" />
+    <param name="escape_speed" value="$(arg safety_dynamic_escape_speed)" />
+    <param name="escape_min_forward_clearance" value="$(arg safety_dynamic_escape_min_forward_clearance)" />
+    <param name="escape_min_obstacle_speed" value="$(arg safety_dynamic_escape_min_obstacle_speed)" />
   </node>
 
   <node
@@ -242,7 +261,7 @@
     <param name="rear_track" value="0.24182" />
     <param name="wheel_radius" value="0.04075" />
     <param name="drive_wheels" value="$(arg ackermann_drive_wheels)" />
-    <param name="max_speed" value="$(arg cmd_vel_max_linear_x)" />
+    <param name="max_speed" value="$(arg ackermann_controller_max_speed)" />
     <param name="max_reverse_speed" value="$(arg cmd_vel_max_reverse_x)" />
     <param name="max_steering_angle" value="$(arg ackermann_max_steering_angle)" />
     <param name="steering_trim" value="$(arg ackermann_steering_trim)" />
@@ -447,6 +466,9 @@
         <param name="dynamic_obstacle_prediction_horizon" value="$(arg safe_goal_dynamic_obstacle_prediction_horizon)" />
         <param name="accept_xy_on_adjusted" value="$(arg safe_goal_accept_xy_on_adjusted)" />
         <param name="adjusted_xy_tolerance" value="$(arg safe_goal_adjusted_xy_tolerance)" />
+        <param name="retry_rejected_goals" value="$(arg safe_goal_retry_rejected_goals)" />
+        <param name="retry_timeout" value="$(arg safe_goal_retry_timeout)" />
+        <param name="retry_period" value="$(arg safe_goal_retry_period)" />
       </node>
     </group>
   </group>

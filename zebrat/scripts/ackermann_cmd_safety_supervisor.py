@@ -5,8 +5,10 @@ import math
 import time
 
 import rospy
+import tf
 from ackermann_msgs.msg import AckermannDriveStamped
 from actionlib_msgs.msg import GoalID
+from costmap_converter.msg import ObstacleArrayMsg
 from sensor_msgs.msg import LaserScan
 
 
@@ -54,15 +56,45 @@ class AckermannCmdSafetySupervisor:
         self.ttc_stop_time = float(rospy.get_param("~ttc_stop_time", 1.0))
         self.scan_timeout = float(rospy.get_param("~scan_timeout", 0.5))
         self.cancel_on_emergency = bool(rospy.get_param("~cancel_on_emergency", False))
+        self.enable_dynamic_escape_boost = bool(rospy.get_param("~enable_dynamic_escape_boost", True))
+        self.dynamic_obstacle_topic = rospy.get_param(
+            "~dynamic_obstacle_topic",
+            "/move_base/TebLocalPlannerROS/obstacles",
+        )
+        self.dynamic_obstacle_timeout = float(rospy.get_param("~dynamic_obstacle_timeout", 0.8))
+        self.escape_prediction_horizon = max(
+            0.0,
+            float(rospy.get_param("~escape_prediction_horizon", 1.2)),
+        )
+        self.escape_threat_radius = max(0.0, float(rospy.get_param("~escape_threat_radius", 0.55)))
+        self.escape_speed = abs(float(rospy.get_param("~escape_speed", 0.30)))
+        self.escape_min_forward_clearance = max(
+            0.0,
+            float(rospy.get_param("~escape_min_forward_clearance", 1.05)),
+        )
+        self.escape_min_obstacle_speed = max(
+            0.0,
+            float(rospy.get_param("~escape_min_obstacle_speed", 0.10)),
+        )
 
         self._front = DirectionalScanState()
         self._rear = DirectionalScanState()
         self._scan_angle_span = 0.0
         self._emergency_active = False
+        self._dynamic_obstacle_message = None
+        self._dynamic_obstacle_wall = 0.0
+        self._tf = tf.TransformListener() if self.enable_dynamic_escape_boost else None
 
         self._publisher = rospy.Publisher(self.output_topic, AckermannDriveStamped, queue_size=1)
         self._cancel_publisher = rospy.Publisher(self.cancel_topic, GoalID, queue_size=1)
         rospy.Subscriber(self.scan_topic, LaserScan, self._scan_callback, queue_size=1)
+        if self.enable_dynamic_escape_boost:
+            rospy.Subscriber(
+                self.dynamic_obstacle_topic,
+                ObstacleArrayMsg,
+                self._dynamic_obstacle_callback,
+                queue_size=1,
+            )
         rospy.Subscriber(self.input_topic, AckermannDriveStamped, self._cmd_callback, queue_size=1)
         rospy.loginfo(
             "ackermann safety supervisor forwarding %s to %s using %s",
@@ -70,6 +102,10 @@ class AckermannCmdSafetySupervisor:
             self.output_topic,
             self.scan_topic,
         )
+
+    def _dynamic_obstacle_callback(self, message):
+        self._dynamic_obstacle_message = message
+        self._dynamic_obstacle_wall = time.monotonic()
 
     def _scan_callback(self, message):
         front_ranges = []
@@ -118,6 +154,139 @@ class AckermannCmdSafetySupervisor:
 
     def _required_stop_distance(self, speed):
         return self.hard_stop_distance + speed * self.reaction_time + (speed * speed) / (2.0 * self.max_deceleration)
+
+    @staticmethod
+    def _distance_to_segment(px, py, x1, y1, x2, y2):
+        dx = x2 - x1
+        dy = y2 - y1
+        length_sq = dx * dx + dy * dy
+        if length_sq <= 1e-9:
+            return math.hypot(px - x1, py - y1), 0.0
+        ratio = _clamp(((px - x1) * dx + (py - y1) * dy) / length_sq, 0.0, 1.0)
+        closest_x = x1 + ratio * dx
+        closest_y = y1 + ratio * dy
+        return math.hypot(px - closest_x, py - closest_y), ratio
+
+    @staticmethod
+    def _obstacle_center_and_radius(obstacle):
+        points = list(obstacle.polygon.points)
+        if not points:
+            return None
+
+        center_x = sum(point.x for point in points) / len(points)
+        center_y = sum(point.y for point in points) / len(points)
+        polygon_radius = max(math.hypot(point.x - center_x, point.y - center_y) for point in points)
+        radius = max(float(obstacle.radius), polygon_radius)
+        return center_x, center_y, max(0.0, radius)
+
+    @staticmethod
+    def _obstacle_velocity(obstacle):
+        try:
+            twist = obstacle.velocities.twist
+            return float(twist.linear.x), float(twist.linear.y)
+        except AttributeError:
+            return 0.0, 0.0
+
+    def _robot_xy_in_frame(self, frame_id):
+        if not frame_id or frame_id == self.frame_id:
+            return 0.0, 0.0
+        if self._tf is None:
+            return None
+        try:
+            translation, _rotation = self._tf.lookupTransform(frame_id, self.frame_id, rospy.Time(0))
+            return float(translation[0]), float(translation[1])
+        except (tf.Exception, tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException) as exc:
+            rospy.logwarn_throttle(
+                2.0,
+                "Cannot evaluate dynamic escape boost without transform %s -> %s: %s",
+                frame_id,
+                self.frame_id,
+                exc,
+            )
+            return None
+
+    def _fresh_dynamic_obstacle_message(self):
+        if not self.enable_dynamic_escape_boost or self._dynamic_obstacle_message is None:
+            return None
+        if time.monotonic() - self._dynamic_obstacle_wall > self.dynamic_obstacle_timeout:
+            return None
+        return self._dynamic_obstacle_message
+
+    def _front_is_clear_for_escape(self, speed):
+        if not self._state_is_fresh(self._front):
+            return False
+        required = max(
+            self.escape_min_forward_clearance,
+            self._required_stop_distance(abs(speed)),
+        )
+        return self._front.minimum >= required
+
+    def _dynamic_escape_threat(self):
+        message = self._fresh_dynamic_obstacle_message()
+        if message is None or self.escape_prediction_horizon <= 0.0:
+            return None
+
+        frame_id = message.header.frame_id or self.frame_id
+        robot_xy = self._robot_xy_in_frame(frame_id)
+        if robot_xy is None:
+            return None
+        robot_x, robot_y = robot_xy
+
+        for obstacle in message.obstacles:
+            shape = self._obstacle_center_and_radius(obstacle)
+            if shape is None:
+                continue
+            obstacle_x, obstacle_y, radius = shape
+            velocity_x, velocity_y = self._obstacle_velocity(obstacle)
+            obstacle_speed = math.hypot(velocity_x, velocity_y)
+            if obstacle_speed < self.escape_min_obstacle_speed:
+                continue
+
+            toward_robot = (robot_x - obstacle_x) * velocity_x + (robot_y - obstacle_y) * velocity_y
+            if toward_robot < 0.0:
+                continue
+
+            predicted_x = obstacle_x + velocity_x * self.escape_prediction_horizon
+            predicted_y = obstacle_y + velocity_y * self.escape_prediction_horizon
+            distance, _ratio = self._distance_to_segment(
+                robot_x,
+                robot_y,
+                obstacle_x,
+                obstacle_y,
+                predicted_x,
+                predicted_y,
+            )
+            clearance = radius + self.escape_threat_radius
+            if distance <= clearance:
+                return obstacle.id, distance, clearance
+        return None
+
+    def _apply_dynamic_escape_boost(self, command):
+        if not self.enable_dynamic_escape_boost:
+            return command
+        if command.drive.speed <= 1e-4:
+            return command
+        if command.drive.speed >= self.escape_speed:
+            return command
+        if not self._front_is_clear_for_escape(self.escape_speed):
+            return command
+
+        threat = self._dynamic_escape_threat()
+        if threat is None:
+            return command
+
+        obstacle_id, distance, clearance = threat
+        boosted = copy.deepcopy(command)
+        boosted.drive.speed = self.escape_speed
+        rospy.loginfo_throttle(
+            1.0,
+            "Dynamic obstacle %s is predicted %.2fm from the robot footprint corridor %.2fm; boosting forward speed to %.2fm/s",
+            obstacle_id,
+            distance,
+            clearance,
+            boosted.drive.speed,
+        )
+        return boosted
 
     def _time_to_collision(self, state, speed):
         closing_speed = max(0.0, speed, state.closing_speed)
@@ -211,11 +380,12 @@ class AckermannCmdSafetySupervisor:
         self._emergency_active = True
 
     def _cmd_callback(self, message):
-        if self._should_emergency_stop(message):
+        command = self._apply_dynamic_escape_boost(message)
+        if self._should_emergency_stop(command):
             self._publish_emergency_stop()
             return
 
-        command = self._limit_reverse_speed(self._apply_slowdown(message))
+        command = self._limit_reverse_speed(self._apply_slowdown(command))
         self._emergency_active = False
         command.header.stamp = rospy.Time.now()
         if not command.header.frame_id:

@@ -7,6 +7,9 @@ import unittest
 from collections import deque
 
 from ackermann_msgs.msg import AckermannDriveStamped
+from costmap_converter.msg import ObstacleArrayMsg
+from costmap_converter.msg import ObstacleMsg
+from geometry_msgs.msg import Point32
 
 
 SCRIPT_DIR = os.path.join(os.path.dirname(__file__), "..", "scripts")
@@ -241,12 +244,14 @@ class AckermannSafetySupervisorReverseTest(unittest.TestCase):
     def setUp(self):
         rospy_module = AckermannCmdSafetySupervisor.__init__.__globals__["rospy"]
         self._original_logwarn_throttle = rospy_module.logwarn_throttle
+        self._original_loginfo_throttle = rospy_module.loginfo_throttle
         rospy_module.logwarn_throttle = lambda *_args, **_kwargs: None
+        rospy_module.loginfo_throttle = lambda *_args, **_kwargs: None
 
     def tearDown(self):
-        AckermannCmdSafetySupervisor.__init__.__globals__["rospy"].logwarn_throttle = (
-            self._original_logwarn_throttle
-        )
+        rospy_module = AckermannCmdSafetySupervisor.__init__.__globals__["rospy"]
+        rospy_module.logwarn_throttle = self._original_logwarn_throttle
+        rospy_module.loginfo_throttle = self._original_loginfo_throttle
 
     def _supervisor(self, now=None):
         if now is None:
@@ -261,6 +266,14 @@ class AckermannSafetySupervisorReverseTest(unittest.TestCase):
         supervisor.scan_timeout = 0.5
         supervisor.require_full_scan_for_reverse = True
         supervisor.min_full_scan_angle = 6.0
+        supervisor.frame_id = "base_footprint"
+        supervisor.enable_dynamic_escape_boost = True
+        supervisor.dynamic_obstacle_timeout = 0.8
+        supervisor.escape_prediction_horizon = 1.2
+        supervisor.escape_threat_radius = 0.45
+        supervisor.escape_speed = 0.30
+        supervisor.escape_min_forward_clearance = 1.0
+        supervisor.escape_min_obstacle_speed = 0.10
         supervisor._front = DirectionalScanState()
         supervisor._rear = DirectionalScanState()
         supervisor._front.minimum = float("inf")
@@ -268,7 +281,26 @@ class AckermannSafetySupervisorReverseTest(unittest.TestCase):
         supervisor._rear.minimum = float("inf")
         supervisor._rear.last_scan_wall = now
         supervisor._scan_angle_span = 6.28
+        supervisor._dynamic_obstacle_message = None
+        supervisor._dynamic_obstacle_wall = 0.0
+        supervisor._tf = None
         return supervisor
+
+    @staticmethod
+    def _dynamic_obstacle_message(x, y, radius, vx, vy, frame_id="base_footprint"):
+        message = ObstacleArrayMsg()
+        message.header.frame_id = frame_id
+        obstacle = ObstacleMsg()
+        obstacle.id = 7
+        point = Point32()
+        point.x = x
+        point.y = y
+        obstacle.polygon.points = [point]
+        obstacle.radius = radius
+        obstacle.velocities.twist.linear.x = vx
+        obstacle.velocities.twist.linear.y = vy
+        message.obstacles.append(obstacle)
+        return message
 
     def test_reverse_command_is_stopped_without_full_scan_coverage(self):
         supervisor = self._supervisor()
@@ -296,6 +328,58 @@ class AckermannSafetySupervisorReverseTest(unittest.TestCase):
 
         self.assertLess(abs(slowed.drive.speed), abs(command.drive.speed))
         self.assertLess(slowed.drive.speed, 0.0)
+
+    def test_dynamic_escape_boosts_forward_command_on_crossing_obstacle_path(self):
+        supervisor = self._supervisor()
+        supervisor._front.minimum = 2.0
+        supervisor._dynamic_obstacle_callback(
+            self._dynamic_obstacle_message(-0.40, 0.0, 0.20, 0.45, 0.0)
+        )
+        command = AckermannDriveStamped()
+        command.drive.speed = 0.12
+
+        boosted = supervisor._apply_dynamic_escape_boost(command)
+
+        self.assertAlmostEqual(boosted.drive.speed, 0.30)
+
+    def test_dynamic_escape_does_not_boost_far_obstacle_path(self):
+        supervisor = self._supervisor()
+        supervisor._front.minimum = 2.0
+        supervisor._dynamic_obstacle_callback(
+            self._dynamic_obstacle_message(-2.00, 0.0, 0.20, 0.30, 0.0)
+        )
+        command = AckermannDriveStamped()
+        command.drive.speed = 0.12
+
+        boosted = supervisor._apply_dynamic_escape_boost(command)
+
+        self.assertAlmostEqual(boosted.drive.speed, 0.12)
+
+    def test_dynamic_escape_waits_when_forward_clearance_is_low(self):
+        supervisor = self._supervisor()
+        supervisor._front.minimum = 0.80
+        supervisor._dynamic_obstacle_callback(
+            self._dynamic_obstacle_message(-0.40, 0.0, 0.20, 0.45, 0.0)
+        )
+        command = AckermannDriveStamped()
+        command.drive.speed = 0.12
+
+        boosted = supervisor._apply_dynamic_escape_boost(command)
+
+        self.assertAlmostEqual(boosted.drive.speed, 0.12)
+
+    def test_dynamic_escape_does_not_boost_reverse_command(self):
+        supervisor = self._supervisor()
+        supervisor._front.minimum = 2.0
+        supervisor._dynamic_obstacle_callback(
+            self._dynamic_obstacle_message(-0.40, 0.0, 0.20, 0.45, 0.0)
+        )
+        command = AckermannDriveStamped()
+        command.drive.speed = -0.03
+
+        boosted = supervisor._apply_dynamic_escape_boost(command)
+
+        self.assertAlmostEqual(boosted.drive.speed, -0.03)
 
 
 if __name__ == "__main__":

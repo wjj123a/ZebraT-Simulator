@@ -43,12 +43,23 @@
   <arg name="safe_goal_dynamic_obstacle_prediction_horizon" default="3.0" />
   <arg name="safe_goal_accept_xy_on_adjusted" default="false" />
   <arg name="safe_goal_adjusted_xy_tolerance" default="0.25" />
+  <arg name="safe_goal_retry_rejected_goals" default="true" />
+  <arg name="safe_goal_retry_timeout" default="20.0" />
+  <arg name="safe_goal_retry_period" default="1.0" />
   <arg name="enable_safety_supervisor" default="true" />
   <arg name="safety_hard_stop_distance" default="0.32" />
   <arg name="safety_slowdown_distance" default="0.95" />
   <arg name="safety_ttc_stop_time" default="0.80" />
   <arg name="safety_rear_angle" default="1.20" />
   <arg name="safety_require_full_scan_for_reverse" default="true" />
+  <arg name="ackermann_controller_max_speed" default="0.30" />
+  <arg name="safety_enable_dynamic_escape_boost" default="true" />
+  <arg name="safety_dynamic_escape_speed" default="0.30" />
+  <arg name="safety_dynamic_escape_prediction_horizon" default="1.20" />
+  <arg name="safety_dynamic_escape_threat_radius" default="0.55" />
+  <arg name="safety_dynamic_escape_min_forward_clearance" default="1.05" />
+  <arg name="safety_dynamic_escape_obstacle_timeout" default="0.80" />
+  <arg name="safety_dynamic_escape_min_obstacle_speed" default="0.10" />
   <arg name="planner_max_reverse_x" default="0.06" />
   <arg name="planner_allow_reverse" default="true" />
   <arg name="planner_suppressed_reverse_behavior" default="stop" />
@@ -115,12 +126,23 @@
     <arg name="safe_goal_dynamic_obstacle_prediction_horizon" value="$(arg safe_goal_dynamic_obstacle_prediction_horizon)" />
     <arg name="safe_goal_accept_xy_on_adjusted" value="$(arg safe_goal_accept_xy_on_adjusted)" />
     <arg name="safe_goal_adjusted_xy_tolerance" value="$(arg safe_goal_adjusted_xy_tolerance)" />
+    <arg name="safe_goal_retry_rejected_goals" value="$(arg safe_goal_retry_rejected_goals)" />
+    <arg name="safe_goal_retry_timeout" value="$(arg safe_goal_retry_timeout)" />
+    <arg name="safe_goal_retry_period" value="$(arg safe_goal_retry_period)" />
     <arg name="enable_safety_supervisor" value="$(arg enable_safety_supervisor)" />
     <arg name="safety_hard_stop_distance" value="$(arg safety_hard_stop_distance)" />
     <arg name="safety_slowdown_distance" value="$(arg safety_slowdown_distance)" />
     <arg name="safety_ttc_stop_time" value="$(arg safety_ttc_stop_time)" />
     <arg name="safety_rear_angle" value="$(arg safety_rear_angle)" />
     <arg name="safety_require_full_scan_for_reverse" value="$(arg safety_require_full_scan_for_reverse)" />
+    <arg name="ackermann_controller_max_speed" value="$(arg ackermann_controller_max_speed)" />
+    <arg name="safety_enable_dynamic_escape_boost" value="$(arg safety_enable_dynamic_escape_boost)" />
+    <arg name="safety_dynamic_escape_speed" value="$(arg safety_dynamic_escape_speed)" />
+    <arg name="safety_dynamic_escape_prediction_horizon" value="$(arg safety_dynamic_escape_prediction_horizon)" />
+    <arg name="safety_dynamic_escape_threat_radius" value="$(arg safety_dynamic_escape_threat_radius)" />
+    <arg name="safety_dynamic_escape_min_forward_clearance" value="$(arg safety_dynamic_escape_min_forward_clearance)" />
+    <arg name="safety_dynamic_escape_obstacle_timeout" value="$(arg safety_dynamic_escape_obstacle_timeout)" />
+    <arg name="safety_dynamic_escape_min_obstacle_speed" value="$(arg safety_dynamic_escape_min_obstacle_speed)" />
     <arg name="planner_max_reverse_x" value="$(arg planner_max_reverse_x)" />
     <arg name="planner_allow_reverse" value="$(arg planner_allow_reverse)" />
     <arg name="planner_suppressed_reverse_behavior" value="$(arg planner_suppressed_reverse_behavior)" />

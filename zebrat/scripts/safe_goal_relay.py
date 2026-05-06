@@ -1,13 +1,15 @@
 #!/usr/bin/env python3
 
+import copy
+import math
 import os
 import sys
+import time
 
 import rospy
 import tf
 from actionlib_msgs.msg import GoalID
 from geometry_msgs.msg import PoseStamped
-import math
 
 sys.path.insert(0, os.path.dirname(__file__))
 from goal_safety import CostmapGoalResolver, normalize_topic_list  # noqa: E402
@@ -19,6 +21,9 @@ class SafeGoalRelay:
         self.output_topic = rospy.get_param("~output_topic", "/move_base_simple/goal")
         self.accept_xy_on_adjusted = bool(rospy.get_param("~accept_xy_on_adjusted", True))
         self.adjusted_xy_tolerance = float(rospy.get_param("~adjusted_xy_tolerance", 0.25))
+        self.retry_rejected_goals = bool(rospy.get_param("~retry_rejected_goals", True))
+        self.retry_timeout = max(0.0, float(rospy.get_param("~retry_timeout", 20.0)))
+        self.retry_period = max(0.1, float(rospy.get_param("~retry_period", 1.0)))
         self.base_frame = rospy.get_param("~base_frame", "base_footprint")
         self._tf = tf.TransformListener()
         costmap_topics = normalize_topic_list(
@@ -49,11 +54,18 @@ class SafeGoalRelay:
         self.publisher = rospy.Publisher(self.output_topic, PoseStamped, queue_size=1)
         self.cancel_publisher = rospy.Publisher("/move_base/cancel", GoalID, queue_size=1)
         self._active_adjusted_goal = None
+        self._pending_goal = None
+        self._pending_goal_created_wall = 0.0
+        self._pending_goal_deadline = 0.0
+        self._pending_goal_retry_count = 0
+        self._pending_goal_reason = ""
         self.subscriber = rospy.Subscriber(self.input_topic, PoseStamped, self._goal_callback, queue_size=1)
         self._reach_timer = rospy.Timer(rospy.Duration(0.1), self._reach_timer_callback)
+        self._retry_timer = rospy.Timer(rospy.Duration(self.retry_period), self._retry_timer_callback)
         rospy.loginfo("Safe goal relay listening on %s and publishing to %s", self.input_topic, self.output_topic)
 
     def _goal_callback(self, message):
+        self._clear_pending_goal()
         resolved = self.resolver.resolve_pose(message, "simple goal")
         if resolved.blocked:
             self._active_adjusted_goal = None
@@ -64,12 +76,84 @@ class SafeGoalRelay:
                 message.pose.position.y,
                 resolved.reason or "blocked",
             )
+            self._store_pending_goal(message, resolved.reason or "blocked")
             return
 
-        output = resolved.pose
-        output.header.stamp = rospy.Time.now()
+        self._publish_resolved_goal(resolved)
+
+    def _publish_resolved_goal(self, resolved):
+        output = copy.deepcopy(resolved.pose)
+        output.header.stamp = self._now_stamp()
         self._active_adjusted_goal = output if resolved.adjusted and self.accept_xy_on_adjusted else None
         self.publisher.publish(output)
+
+    @staticmethod
+    def _now_stamp():
+        return rospy.Time.now() if rospy.core.is_initialized() else rospy.Time(0)
+
+    def _clear_pending_goal(self):
+        self._pending_goal = None
+        self._pending_goal_created_wall = 0.0
+        self._pending_goal_deadline = 0.0
+        self._pending_goal_retry_count = 0
+        self._pending_goal_reason = ""
+
+    def _store_pending_goal(self, message, reason):
+        if not self.retry_rejected_goals or self.retry_timeout <= 0.0:
+            return
+
+        now = time.monotonic()
+        self._pending_goal = copy.deepcopy(message)
+        self._pending_goal_created_wall = now
+        self._pending_goal_deadline = now + self.retry_timeout
+        self._pending_goal_retry_count = 0
+        self._pending_goal_reason = reason
+        rospy.logwarn(
+            "Keeping rejected simple goal at (%.2f, %.2f) pending for %.1fs; it will be retried every %.1fs",
+            message.pose.position.x,
+            message.pose.position.y,
+            self.retry_timeout,
+            self.retry_period,
+        )
+
+    def _retry_timer_callback(self, _event):
+        if self._pending_goal is None:
+            return
+
+        now = time.monotonic()
+        if now >= self._pending_goal_deadline:
+            rospy.logerr(
+                "Pending simple goal at (%.2f, %.2f) expired after %.1fs; waiting for a new RViz goal",
+                self._pending_goal.pose.position.x,
+                self._pending_goal.pose.position.y,
+                now - self._pending_goal_created_wall,
+            )
+            self._clear_pending_goal()
+            return
+
+        self._pending_goal_retry_count += 1
+        resolved = self.resolver.resolve_pose(
+            self._pending_goal,
+            "pending simple goal",
+            wait=False,
+            log_blocked=False,
+        )
+        if resolved.blocked:
+            rospy.logwarn_throttle(
+                2.0,
+                "Pending simple goal is still unsafe after %d retries; %.1fs remain",
+                self._pending_goal_retry_count,
+                max(0.0, self._pending_goal_deadline - now),
+            )
+            return
+
+        rospy.loginfo(
+            "Pending simple goal became safe after %.1fs and %d retries; publishing to move_base",
+            now - self._pending_goal_created_wall,
+            self._pending_goal_retry_count,
+        )
+        self._publish_resolved_goal(resolved)
+        self._clear_pending_goal()
 
     def _reach_timer_callback(self, _event):
         if self._active_adjusted_goal is None:
