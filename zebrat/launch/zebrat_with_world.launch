@@ -37,11 +37,18 @@
   <arg name="safe_goal_target_check_radius" default="0.35"/>
   <arg name="safe_goal_use_dynamic_routes" default="true"/>
   <arg name="safe_goal_dynamic_route_inflation" default="0.42"/>
+  <arg name="safe_goal_use_dynamic_obstacle_predictions" default="true"/>
+  <arg name="safe_goal_dynamic_obstacle_path_inflation" default="0.42"/>
+  <arg name="safe_goal_dynamic_obstacle_prediction_timeout" default="1.0"/>
+  <arg name="safe_goal_dynamic_obstacle_prediction_horizon" default="1.5"/>
   <arg name="safe_goal_accept_xy_on_adjusted" default="true"/>
   <arg name="safe_goal_adjusted_xy_tolerance" default="0.25"/>
   <arg name="enable_dynamic_obstacles" default="true"/>
   <arg name="dynamic_obstacle_profile" default="area_mixed"/>
   <arg name="dynamic_obstacle_speed_scale" default="1.0"/>
+  <arg name="enable_dynamic_obstacle_predictions" default="true"/>
+  <arg name="dynamic_obstacle_prediction_topic" default="/move_base/TebLocalPlannerROS/obstacles"/>
+  <arg name="dynamic_obstacle_prediction_rate" default="12.0"/>
   <arg name="navigation_backend" default="gmapping"/>
   <arg name="rtabmap_enable_ekf_odom" default="false"/>
   <arg name="rtabmap_delete_db_on_start" default="false"/>
@@ -118,11 +125,18 @@
     <arg name="safe_goal_target_check_radius" value="$(arg safe_goal_target_check_radius)" />
     <arg name="safe_goal_use_dynamic_routes" value="$(arg safe_goal_use_dynamic_routes)" />
     <arg name="safe_goal_dynamic_route_inflation" value="$(arg safe_goal_dynamic_route_inflation)" />
+    <arg name="safe_goal_use_dynamic_obstacle_predictions" value="$(arg safe_goal_use_dynamic_obstacle_predictions)" />
+    <arg name="safe_goal_dynamic_obstacle_path_inflation" value="$(arg safe_goal_dynamic_obstacle_path_inflation)" />
+    <arg name="safe_goal_dynamic_obstacle_prediction_timeout" value="$(arg safe_goal_dynamic_obstacle_prediction_timeout)" />
+    <arg name="safe_goal_dynamic_obstacle_prediction_horizon" value="$(arg safe_goal_dynamic_obstacle_prediction_horizon)" />
     <arg name="safe_goal_accept_xy_on_adjusted" value="$(arg safe_goal_accept_xy_on_adjusted)" />
     <arg name="safe_goal_adjusted_xy_tolerance" value="$(arg safe_goal_adjusted_xy_tolerance)" />
     <arg name="enable_dynamic_obstacles" value="$(arg enable_dynamic_obstacles)" />
     <arg name="dynamic_obstacle_profile" value="$(arg dynamic_obstacle_profile)" />
     <arg name="dynamic_obstacle_speed_scale" value="$(arg dynamic_obstacle_speed_scale)" />
+    <arg name="enable_dynamic_obstacle_predictions" value="$(arg enable_dynamic_obstacle_predictions)" />
+    <arg name="dynamic_obstacle_prediction_topic" value="$(arg dynamic_obstacle_prediction_topic)" />
+    <arg name="dynamic_obstacle_prediction_rate" value="$(arg dynamic_obstacle_prediction_rate)" />
     <arg name="navigation_backend" value="$(arg navigation_backend)" />
     <arg name="rtabmap_enable_ekf_odom" value="$(arg rtabmap_enable_ekf_odom)" />
     <arg name="rtabmap_delete_db_on_start" value="$(arg rtabmap_delete_db_on_start)" />

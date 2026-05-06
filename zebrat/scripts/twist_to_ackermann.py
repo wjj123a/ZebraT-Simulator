@@ -133,6 +133,7 @@ class TwistToAckermann:
         if reverse_suppressed and self.suppressed_reverse_behavior == "stop":
             steering = 0.0
         elif reverse_suppressed and self.suppressed_reverse_behavior == "forward_crawl":
+            steering = self._maybe_flip_suppressed_reverse_steering(steering, reverse_suppressed)
             assisted_steering = self._forward_turn_assist_steering(steering)
             if assisted_steering is not None:
                 steering = assisted_steering
@@ -169,6 +170,15 @@ class TwistToAckermann:
         if not self.allow_reverse and linear_x < 0.0:
             return 0.0, True
         return _clamp(linear_x, -self.max_reverse_speed, self.max_speed), False
+
+    def _maybe_flip_suppressed_reverse_steering(self, steering, reverse_suppressed):
+        if not reverse_suppressed:
+            return steering
+        if self.suppressed_reverse_behavior != "forward_crawl":
+            return steering
+        if self.angular_input_mode != "steering_angle":
+            return steering
+        return -steering
 
     def _forward_turn_assist_steering(self, fallback_steering):
         carrot = self._plan_carrot_in_base()

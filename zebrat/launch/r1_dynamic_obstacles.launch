@@ -3,6 +3,9 @@
   <arg name="profile" default="area_mixed" />
   <arg name="speed_scale" default="1.0" />
   <arg name="config_file" default="$(find zebrat)/config/dynamic_obstacles_area.yaml" />
+  <arg name="enable_predictions" default="true" />
+  <arg name="prediction_topic" default="/move_base/TebLocalPlannerROS/obstacles" />
+  <arg name="prediction_rate" default="12.0" />
 
   <node
     name="dynamic_obstacles"
@@ -12,5 +15,18 @@
     <rosparam command="load" file="$(arg config_file)" />
     <param name="profile" value="$(arg profile)" />
     <param name="speed_scale" value="$(arg speed_scale)" />
+  </node>
+
+  <node
+    if="$(arg enable_predictions)"
+    name="dynamic_obstacle_predictions"
+    pkg="zebrat"
+    type="dynamic_obstacle_predictions.py"
+    output="screen">
+    <rosparam command="load" file="$(arg config_file)" />
+    <param name="profile" value="$(arg profile)" />
+    <param name="speed_scale" value="$(arg speed_scale)" />
+    <param name="output_topic" value="$(arg prediction_topic)" />
+    <param name="publish_rate" value="$(arg prediction_rate)" />
   </node>
 </launch>

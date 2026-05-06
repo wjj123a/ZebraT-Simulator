@@ -9,6 +9,7 @@ project(zebrat)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
   ackermann_msgs
+  costmap_converter
   gazebo_msgs
   geometry_msgs
   nav_msgs
@@ -113,7 +114,7 @@ find_package(catkin REQUIRED COMPONENTS
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES zebrat
-  CATKIN_DEPENDS ackermann_msgs gazebo_msgs geometry_msgs nav_msgs roscpp rospy sensor_msgs std_msgs std_srvs tf tf2_ros
+  CATKIN_DEPENDS ackermann_msgs costmap_converter gazebo_msgs geometry_msgs nav_msgs roscpp rospy sensor_msgs std_msgs std_srvs tf tf2_ros
 #  DEPENDS system_lib
 )
 
@@ -173,6 +174,7 @@ catkin_install_python(PROGRAMS
   scripts/ackermann_cmd_safety_supervisor.py
   scripts/cmd_vel_arbiter.py
   scripts/cmd_vel_safety_supervisor.py
+  scripts/dynamic_obstacle_predictions.py
   scripts/dynamic_obstacles.py
   scripts/explore_waypoints.py
   scripts/gazebo_auto_unpause.py
@@ -200,6 +202,8 @@ install(FILES
 
 if(CATKIN_ENABLE_TESTING)
   catkin_add_nosetests(test/test_ackermann_geometry.py)
+  catkin_add_nosetests(test/test_dynamic_obstacle_predictions.py)
+  catkin_add_nosetests(test/test_goal_safety.py)
 endif()
 
 ## Mark executables for installation

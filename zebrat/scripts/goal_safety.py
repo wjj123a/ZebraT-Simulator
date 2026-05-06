@@ -6,6 +6,7 @@ import time
 
 import rospy
 import tf
+from costmap_converter.msg import ObstacleArrayMsg
 from geometry_msgs.msg import PoseStamped
 from nav_msgs.msg import OccupancyGrid
 from tf.transformations import euler_from_quaternion
@@ -40,6 +41,12 @@ class CostmapGoalResolver:
         costmap_wait_timeout=10.0,
         use_dynamic_routes=True,
         dynamic_route_inflation=0.42,
+        use_dynamic_obstacle_predictions=True,
+        dynamic_obstacle_topics=None,
+        dynamic_obstacle_path_inflation=0.42,
+        dynamic_obstacle_prediction_timeout=1.0,
+        dynamic_obstacle_prediction_horizon=1.5,
+        base_frame="base_footprint",
     ):
         self.costmap_topics = costmap_topics or [
             "/move_base/local_costmap/costmap",
@@ -55,17 +62,34 @@ class CostmapGoalResolver:
         self.costmap_wait_timeout = float(costmap_wait_timeout)
         self.use_dynamic_routes = bool(use_dynamic_routes)
         self.dynamic_route_inflation = float(dynamic_route_inflation)
+        self.use_dynamic_obstacle_predictions = bool(use_dynamic_obstacle_predictions)
+        self.dynamic_obstacle_topics = normalize_topic_list(
+            dynamic_obstacle_topics or ["/move_base/TebLocalPlannerROS/obstacles"]
+        )
+        self.dynamic_obstacle_path_inflation = float(dynamic_obstacle_path_inflation)
+        self.dynamic_obstacle_prediction_timeout = float(dynamic_obstacle_prediction_timeout)
+        self.dynamic_obstacle_prediction_horizon = max(0.0, float(dynamic_obstacle_prediction_horizon))
+        self.base_frame = str(base_frame)
 
         self._costmaps = {}
+        self._dynamic_obstacles = {}
         self._tf = tf.TransformListener()
         self._subscribers = [
             rospy.Subscriber(topic, OccupancyGrid, self._costmap_callback, callback_args=topic, queue_size=1)
             for topic in self.costmap_topics
         ]
+        if self.use_dynamic_obstacle_predictions:
+            self._subscribers.extend(
+                rospy.Subscriber(topic, ObstacleArrayMsg, self._dynamic_obstacle_callback, callback_args=topic, queue_size=1)
+                for topic in self.dynamic_obstacle_topics
+            )
         self._dynamic_route_segments = self._load_dynamic_route_segments() if self.use_dynamic_routes else []
 
     def _costmap_callback(self, message, topic):
         self._costmaps[topic] = message
+
+    def _dynamic_obstacle_callback(self, message, topic):
+        self._dynamic_obstacles[topic] = (message, time.monotonic())
 
     def wait_for_costmaps(self):
         deadline = time.monotonic() + self.costmap_wait_timeout
@@ -180,6 +204,141 @@ class CostmapGoalResolver:
         closest_y = y1 + ratio * dy
         return math.hypot(px - closest_x, py - closest_y)
 
+    @staticmethod
+    def _orientation(ax, ay, bx, by, cx, cy):
+        value = (by - ay) * (cx - bx) - (bx - ax) * (cy - by)
+        if abs(value) <= 1e-9:
+            return 0
+        return 1 if value > 0.0 else 2
+
+    @staticmethod
+    def _on_segment(ax, ay, bx, by, cx, cy):
+        return (
+            min(ax, cx) - 1e-9 <= bx <= max(ax, cx) + 1e-9
+            and min(ay, cy) - 1e-9 <= by <= max(ay, cy) + 1e-9
+        )
+
+    @classmethod
+    def _segments_intersect(cls, ax, ay, bx, by, cx, cy, dx, dy):
+        o1 = cls._orientation(ax, ay, bx, by, cx, cy)
+        o2 = cls._orientation(ax, ay, bx, by, dx, dy)
+        o3 = cls._orientation(cx, cy, dx, dy, ax, ay)
+        o4 = cls._orientation(cx, cy, dx, dy, bx, by)
+        if o1 != o2 and o3 != o4:
+            return True
+        if o1 == 0 and cls._on_segment(ax, ay, cx, cy, bx, by):
+            return True
+        if o2 == 0 and cls._on_segment(ax, ay, dx, dy, bx, by):
+            return True
+        if o3 == 0 and cls._on_segment(cx, cy, ax, ay, dx, dy):
+            return True
+        if o4 == 0 and cls._on_segment(cx, cy, bx, by, dx, dy):
+            return True
+        return False
+
+    @classmethod
+    def _segment_to_segment_distance(cls, ax, ay, bx, by, cx, cy, dx, dy):
+        if cls._segments_intersect(ax, ay, bx, by, cx, cy, dx, dy):
+            return 0.0
+        return min(
+            cls._distance_to_segment(ax, ay, cx, cy, dx, dy),
+            cls._distance_to_segment(bx, by, cx, cy, dx, dy),
+            cls._distance_to_segment(cx, cy, ax, ay, bx, by),
+            cls._distance_to_segment(dx, dy, ax, ay, bx, by),
+        )
+
+    def _current_pose(self, frame_id):
+        try:
+            translation, rotation = self._tf.lookupTransform(frame_id, self.base_frame, rospy.Time(0))
+        except (tf.Exception, tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
+            return None
+
+        pose = PoseStamped()
+        pose.header.frame_id = frame_id
+        pose.header.stamp = rospy.Time(0)
+        pose.pose.position.x = float(translation[0])
+        pose.pose.position.y = float(translation[1])
+        pose.pose.position.z = float(translation[2])
+        pose.pose.orientation.x = rotation[0]
+        pose.pose.orientation.y = rotation[1]
+        pose.pose.orientation.z = rotation[2]
+        pose.pose.orientation.w = rotation[3]
+        return pose
+
+    @staticmethod
+    def _obstacle_center_and_radius(obstacle):
+        points = list(obstacle.polygon.points)
+        if not points:
+            return None
+
+        center_x = sum(point.x for point in points) / len(points)
+        center_y = sum(point.y for point in points) / len(points)
+        polygon_radius = max(math.hypot(point.x - center_x, point.y - center_y) for point in points)
+        radius = max(float(obstacle.radius), polygon_radius)
+        return center_x, center_y, max(0.0, radius)
+
+    @staticmethod
+    def _obstacle_velocity(obstacle):
+        try:
+            twist = obstacle.velocities.twist
+            return float(twist.linear.x), float(twist.linear.y)
+        except AttributeError:
+            return 0.0, 0.0
+
+    def _fresh_dynamic_obstacle_messages(self):
+        if not self.use_dynamic_obstacle_predictions:
+            return []
+
+        now = time.monotonic()
+        messages = []
+        for message, wall_time in self._dynamic_obstacles.values():
+            if now - wall_time <= self.dynamic_obstacle_prediction_timeout:
+                messages.append(message)
+        return messages
+
+    def _path_to_pose_blocked_by_dynamic_obstacles(self, pose):
+        messages = self._fresh_dynamic_obstacle_messages()
+        if not messages:
+            return False
+
+        for message in messages:
+            frame_id = message.header.frame_id or "map"
+            target = self._transform_pose(pose, frame_id)
+            start = self._current_pose(frame_id)
+            if target is None or start is None:
+                continue
+
+            sx = start.pose.position.x
+            sy = start.pose.position.y
+            tx = target.pose.position.x
+            ty = target.pose.position.y
+            if math.hypot(tx - sx, ty - sy) <= 1e-6:
+                continue
+
+            for obstacle in message.obstacles:
+                obstacle_shape = self._obstacle_center_and_radius(obstacle)
+                if obstacle_shape is None:
+                    continue
+                ox, oy, radius = obstacle_shape
+                vx, vy = self._obstacle_velocity(obstacle)
+                px = ox + vx * self.dynamic_obstacle_prediction_horizon
+                py = oy + vy * self.dynamic_obstacle_prediction_horizon
+                distance = self._segment_to_segment_distance(sx, sy, tx, ty, ox, oy, px, py)
+                clearance = radius + self.dynamic_obstacle_path_inflation
+                if distance <= clearance:
+                    if rospy.core.is_initialized():
+                        rospy.logwarn_throttle(
+                            2.0,
+                            "Path to goal candidate (%.2f, %.2f) is %.2fm from predicted dynamic obstacle %d; required clearance %.2fm",
+                            tx,
+                            ty,
+                            distance,
+                            obstacle.id,
+                            clearance,
+                        )
+                    return True
+        return False
+
     def _is_on_dynamic_route(self, pose):
         if not self._dynamic_route_segments:
             return False
@@ -236,6 +395,8 @@ class CostmapGoalResolver:
 
     def is_pose_safe(self, pose):
         if self._is_on_dynamic_route(pose):
+            return False
+        if self._path_to_pose_blocked_by_dynamic_obstacles(pose):
             return False
 
         checked_any = False

@@ -41,7 +41,7 @@ TebLocalPlannerROS:
   costmap_obstacles_behind_robot_dist: 1.0
   obstacle_poses_affected: 15
   dynamic_obstacle_inflation_dist: 0.65
-  include_dynamic_obstacles: false
+  include_dynamic_obstacles: true
 
   no_inner_iterations: 6
   no_outer_iterations: 4
@@ -59,6 +59,8 @@ TebLocalPlannerROS:
   weight_shortest_path: 0.0
   weight_obstacle: 50.0
   weight_inflation: 0.2
+  weight_dynamic_obstacle: 70.0
+  weight_dynamic_obstacle_inflation: 0.2
   weight_viapoint: 0.8
 
   enable_homotopy_class_planning: false

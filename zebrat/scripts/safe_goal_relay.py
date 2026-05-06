@@ -39,6 +39,12 @@ class SafeGoalRelay:
             costmap_wait_timeout=rospy.get_param("~costmap_wait_timeout", 10.0),
             use_dynamic_routes=rospy.get_param("~use_dynamic_routes", True),
             dynamic_route_inflation=rospy.get_param("~dynamic_route_inflation", 0.42),
+            use_dynamic_obstacle_predictions=rospy.get_param("~use_dynamic_obstacle_predictions", True),
+            dynamic_obstacle_topics=rospy.get_param("~dynamic_obstacle_topics", "/move_base/TebLocalPlannerROS/obstacles"),
+            dynamic_obstacle_path_inflation=rospy.get_param("~dynamic_obstacle_path_inflation", 0.42),
+            dynamic_obstacle_prediction_timeout=rospy.get_param("~dynamic_obstacle_prediction_timeout", 1.0),
+            dynamic_obstacle_prediction_horizon=rospy.get_param("~dynamic_obstacle_prediction_horizon", 1.5),
+            base_frame=self.base_frame,
         )
         self.publisher = rospy.Publisher(self.output_topic, PoseStamped, queue_size=1)
         self.cancel_publisher = rospy.Publisher("/move_base/cancel", GoalID, queue_size=1)

@@ -196,12 +196,12 @@ class AckermannReverseRecovery:
         )
 
     def _update_progress(self, now):
-        if self.goal_progress_enabled and self._current_goal is not None:
+        if getattr(self, "goal_progress_enabled", True) and getattr(self, "_current_goal", None) is not None:
             goal_distance = self._goal_distance()
             if goal_distance is not None:
                 if (
-                    self._best_goal_distance is None
-                    or goal_distance <= self._best_goal_distance - self.goal_progress_tolerance
+                    getattr(self, "_best_goal_distance", None) is None
+                    or goal_distance <= self._best_goal_distance - getattr(self, "goal_progress_tolerance", 0.16)
                 ):
                     self._best_goal_distance = goal_distance
                     self._last_progress_wall = now

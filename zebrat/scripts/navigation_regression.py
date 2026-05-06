@@ -76,6 +76,14 @@ class NavigationRegression:
                 costmap_wait_timeout=rospy.get_param("~safe_goal_costmap_wait_timeout", 10.0),
                 use_dynamic_routes=rospy.get_param("~safe_goal_use_dynamic_routes", True),
                 dynamic_route_inflation=rospy.get_param("~safe_goal_dynamic_route_inflation", 0.42),
+                use_dynamic_obstacle_predictions=rospy.get_param("~safe_goal_use_dynamic_obstacle_predictions", True),
+                dynamic_obstacle_topics=rospy.get_param(
+                    "~safe_goal_dynamic_obstacle_topics",
+                    "/move_base/TebLocalPlannerROS/obstacles",
+                ),
+                dynamic_obstacle_path_inflation=rospy.get_param("~safe_goal_dynamic_obstacle_path_inflation", 0.42),
+                dynamic_obstacle_prediction_timeout=rospy.get_param("~safe_goal_dynamic_obstacle_prediction_timeout", 1.0),
+                dynamic_obstacle_prediction_horizon=rospy.get_param("~safe_goal_dynamic_obstacle_prediction_horizon", 1.5),
             )
         self._last_scan_min = float("inf")
         self._last_command_wall = time.monotonic()
