@@ -118,3 +118,15 @@ world_profiles:
     regression_goals:
       - {x: 8.0, y: 8.0, yaw: 0.78}
       - {x: -6.0, y: 4.0, yaw: 3.14}
+  area_realistic:
+    world: worlds/area_realistic.world
+    dynamic_obstacles: true
+    spawn: {x: 1.95, y: -1.65, z: 0.02, yaw: 0.0}
+    map: {xmin: -40.0, ymin: -40.0, xmax: 40.0, ymax: 40.0, resolution: 0.10}
+    exploration_path:
+      - {x: 5.0, y: 0.0, yaw: 0.0}
+      - {x: 10.0, y: 5.0, yaw: 0.5}
+      - {x: 0.0, y: 10.0, yaw: 1.57}
+    regression_goals:
+      - {x: 8.0, y: 8.0, yaw: 0.78}
+      - {x: -6.0, y: 4.0, yaw: 3.14}

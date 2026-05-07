@@ -129,18 +129,174 @@ class DynamicObstacleController:
 
     @staticmethod
     def _rgba(spec, default):
+        return DynamicObstacleController._rgba_text(
+            DynamicObstacleController._rgba_values(spec, default)
+        )
+
+    @staticmethod
+    def _rgba_values(spec, default):
         values = spec.get("color", default)
-        return "%s %s %s %s" % (
+        return (
             float(values[0]),
             float(values[1]),
             float(values[2]),
             float(values[3]) if len(values) > 3 else 1.0,
         )
 
+    @staticmethod
+    def _rgba_text(values):
+        return "%s %s %s %s" % (
+            float(values[0]),
+            float(values[1]),
+            float(values[2]),
+            float(values[3]),
+        )
+
+    @staticmethod
+    def _tint(values, amount):
+        return (
+            min(1.0, max(0.0, float(values[0]) + amount)),
+            min(1.0, max(0.0, float(values[1]) + amount)),
+            min(1.0, max(0.0, float(values[2]) + amount)),
+            float(values[3]),
+        )
+
+    @staticmethod
+    def _shade(values, factor):
+        return (
+            min(1.0, max(0.0, float(values[0]) * factor)),
+            min(1.0, max(0.0, float(values[1]) * factor)),
+            min(1.0, max(0.0, float(values[2]) * factor)),
+            float(values[3]),
+        )
+
+    @classmethod
+    def _material(cls, color, specular="0.08 0.08 0.08 1", emissive="0 0 0 1"):
+        color_text = cls._rgba_text(color)
+        return """        <material>
+          <ambient>%s</ambient>
+          <diffuse>%s</diffuse>
+          <specular>%s</specular>
+          <emissive>%s</emissive>
+        </material>""" % (color_text, color_text, specular, emissive)
+
+    @classmethod
+    def _box_visual(cls, name, pose, size, color, specular="0.08 0.08 0.08 1", emissive="0 0 0 1"):
+        return """      <visual name="%s">
+        <pose>%s</pose>
+        <geometry>
+          <box>
+            <size>%.3f %.3f %.3f</size>
+          </box>
+        </geometry>
+%s
+      </visual>""" % (name, pose, float(size[0]), float(size[1]), float(size[2]), cls._material(color, specular, emissive))
+
+    @classmethod
+    def _cylinder_visual(cls, name, pose, radius, length, color, specular="0.08 0.08 0.08 1"):
+        return """      <visual name="%s">
+        <pose>%s</pose>
+        <geometry>
+          <cylinder>
+            <radius>%.3f</radius>
+            <length>%.3f</length>
+          </cylinder>
+        </geometry>
+%s
+      </visual>""" % (name, pose, float(radius), float(length), cls._material(color, specular))
+
+    @classmethod
+    def _sphere_visual(cls, name, pose, radius, color, specular="0.08 0.08 0.08 1"):
+        return """      <visual name="%s">
+        <pose>%s</pose>
+        <geometry>
+          <sphere>
+            <radius>%.3f</radius>
+          </sphere>
+        </geometry>
+%s
+      </visual>""" % (name, pose, float(radius), cls._material(color, specular))
+
     def _pedestrian_sdf(self, obstacle):
         radius = float(obstacle.spec.get("radius", 0.24))
         height = float(obstacle.spec.get("height", 1.6))
-        color = self._rgba(obstacle.spec, [0.2, 0.32, 0.86, 1.0])
+        shirt = self._rgba_values(obstacle.spec, [0.2, 0.32, 0.86, 1.0])
+        pants = self._shade(shirt, 0.32)
+        skin = (0.90, 0.72, 0.56, 1.0)
+        hair = (0.10, 0.07, 0.04, 1.0)
+        shoes = (0.04, 0.04, 0.04, 1.0)
+        stripe = (0.95, 0.90, 0.45, 1.0)
+        head_radius = min(radius * 0.55, height * 0.09)
+        torso_height = height * 0.34
+        leg_height = height * 0.40
+        arm_height = height * 0.34
+        torso_z = leg_height + torso_height / 2.0
+        head_z = min(height - head_radius * 0.85, torso_z + torso_height / 2.0 + head_radius * 1.15)
+        visuals = [
+            self._box_visual(
+                "torso",
+                "0 0 %.3f 0 0 0" % torso_z,
+                (radius * 1.15, radius * 0.74, torso_height),
+                shirt,
+            ),
+            self._box_visual(
+                "vest_stripe",
+                "%.3f 0 %.3f 0 0 0" % (radius * 0.58, torso_z + torso_height * 0.16),
+                (0.018, radius * 0.80, height * 0.045),
+                stripe,
+                specular="0.2 0.18 0.08 1",
+            ),
+            self._box_visual(
+                "left_arm",
+                "0 %.3f %.3f 0 0 0" % (radius * 0.56, torso_z),
+                (radius * 0.24, radius * 0.20, arm_height),
+                skin,
+            ),
+            self._box_visual(
+                "right_arm",
+                "0 %.3f %.3f 0 0 0" % (-radius * 0.56, torso_z),
+                (radius * 0.24, radius * 0.20, arm_height),
+                skin,
+            ),
+            self._box_visual(
+                "left_leg",
+                "0 %.3f %.3f 0 0 0" % (radius * 0.22, leg_height / 2.0),
+                (radius * 0.30, radius * 0.26, leg_height),
+                pants,
+            ),
+            self._box_visual(
+                "right_leg",
+                "0 %.3f %.3f 0 0 0" % (-radius * 0.22, leg_height / 2.0),
+                (radius * 0.30, radius * 0.26, leg_height),
+                pants,
+            ),
+            self._box_visual(
+                "left_shoe",
+                "%.3f %.3f %.3f 0 0 0" % (radius * 0.12, radius * 0.22, height * 0.035),
+                (radius * 0.58, radius * 0.28, height * 0.070),
+                shoes,
+            ),
+            self._box_visual(
+                "right_shoe",
+                "%.3f %.3f %.3f 0 0 0" % (radius * 0.12, -radius * 0.22, height * 0.035),
+                (radius * 0.58, radius * 0.28, height * 0.070),
+                shoes,
+            ),
+            self._sphere_visual("head", "0 0 %.3f 0 0 0" % head_z, head_radius, skin),
+            self._sphere_visual(
+                "hair",
+                "-%.3f 0 %.3f 0 0 0" % (head_radius * 0.18, head_z + head_radius * 0.22),
+                head_radius * 0.82,
+                hair,
+            ),
+            self._box_visual(
+                "face_direction",
+                "%.3f 0 %.3f 0 0 0" % (head_radius * 0.78, head_z),
+                (0.016, head_radius * 0.88, head_radius * 0.36),
+                (0.98, 0.92, 0.82, 1.0),
+                specular="0.02 0.02 0.02 1",
+            ),
+        ]
         name = html.escape(obstacle.name)
         return """<?xml version="1.0"?>
 <sdf version="1.6">
@@ -165,29 +321,88 @@ class DynamicObstacleController:
           </cylinder>
         </geometry>
       </collision>
-      <visual name="sensor_body">
-        <pose>0 0 %.3f 0 0 0</pose>
-        <geometry>
-          <cylinder>
-            <radius>%.3f</radius>
-            <length>%.3f</length>
-          </cylinder>
-        </geometry>
-        <material>
-          <ambient>%s</ambient>
-          <diffuse>%s</diffuse>
-        </material>
-      </visual>
+%s
     </link>
   </model>
-</sdf>""" % (name, height / 2.0, radius, height, height / 2.0, radius, height, color, color)
+</sdf>""" % (name, height / 2.0, radius, height, "\n".join(visuals))
 
     def _vehicle_sdf(self, obstacle):
         size = obstacle.spec.get("size", [0.9, 0.5, 0.55])
         length = float(size[0])
         width = float(size[1])
         height = float(size[2])
-        color = self._rgba(obstacle.spec, [0.95, 0.55, 0.16, 1.0])
+        body = self._rgba_values(obstacle.spec, [0.95, 0.55, 0.16, 1.0])
+        dark = (0.035, 0.035, 0.040, 1.0)
+        glass = (0.14, 0.24, 0.30, 0.92)
+        metal = (0.72, 0.72, 0.68, 1.0)
+        white = (0.95, 0.92, 0.80, 1.0)
+        red = (0.80, 0.06, 0.04, 1.0)
+        if obstacle.kind == "cart":
+            visuals = [
+                self._box_visual(
+                    "cargo_tray",
+                    "0 0 %.3f 0 0 0" % (height * 0.44),
+                    (length * 0.90, width * 0.82, height * 0.42),
+                    body,
+                ),
+                self._box_visual(
+                    "front_panel",
+                    "%.3f 0 %.3f 0 0 0" % (length * 0.42, height * 0.72),
+                    (length * 0.08, width * 0.86, height * 0.36),
+                    self._tint(body, 0.06),
+                ),
+                self._box_visual(
+                    "handle_bar",
+                    "-%.3f 0 %.3f 0 0 0" % (length * 0.52, height * 0.86),
+                    (length * 0.10, width * 1.10, height * 0.10),
+                    metal,
+                    specular="0.25 0.25 0.25 1",
+                ),
+                self._box_visual("wheel_fl", "%.3f %.3f %.3f 0 0 0" % (length * 0.28, width * 0.43, height * 0.18), (length * 0.22, width * 0.12, height * 0.28), dark),
+                self._box_visual("wheel_fr", "%.3f %.3f %.3f 0 0 0" % (length * 0.28, -width * 0.43, height * 0.18), (length * 0.22, width * 0.12, height * 0.28), dark),
+                self._box_visual("wheel_rl", "%.3f %.3f %.3f 0 0 0" % (-length * 0.30, width * 0.43, height * 0.18), (length * 0.22, width * 0.12, height * 0.28), dark),
+                self._box_visual("wheel_rr", "%.3f %.3f %.3f 0 0 0" % (-length * 0.30, -width * 0.43, height * 0.18), (length * 0.22, width * 0.12, height * 0.28), dark),
+                self._box_visual("front_reflector", "%.3f 0 %.3f 0 0 0" % (length * 0.48, height * 0.54), (length * 0.035, width * 0.62, height * 0.08), white, emissive="0.8 0.7 0.35 1"),
+            ]
+        else:
+            visuals = [
+                self._box_visual(
+                    "lower_body",
+                    "0 0 %.3f 0 0 0" % (height * 0.38),
+                    (length * 0.98, width * 0.92, height * 0.56),
+                    body,
+                ),
+                self._box_visual(
+                    "cabin",
+                    "-%.3f 0 %.3f 0 0 0" % (length * 0.07, height * 0.76),
+                    (length * 0.46, width * 0.78, height * 0.40),
+                    self._tint(body, 0.09),
+                ),
+                self._box_visual(
+                    "windshield",
+                    "%.3f 0 %.3f 0 0 0" % (length * 0.18, height * 0.80),
+                    (length * 0.035, width * 0.70, height * 0.24),
+                    glass,
+                    specular="0.35 0.35 0.35 1",
+                ),
+                self._box_visual(
+                    "rear_window",
+                    "-%.3f 0 %.3f 0 0 0" % (length * 0.30, height * 0.78),
+                    (length * 0.035, width * 0.62, height * 0.22),
+                    glass,
+                    specular="0.35 0.35 0.35 1",
+                ),
+                self._box_visual("front_bumper", "%.3f 0 %.3f 0 0 0" % (length * 0.52, height * 0.30), (length * 0.08, width * 0.90, height * 0.14), metal),
+                self._box_visual("rear_bumper", "-%.3f 0 %.3f 0 0 0" % (length * 0.52, height * 0.30), (length * 0.08, width * 0.90, height * 0.14), metal),
+                self._box_visual("headlight_left", "%.3f %.3f %.3f 0 0 0" % (length * 0.535, width * 0.24, height * 0.44), (length * 0.035, width * 0.22, height * 0.10), white, emissive="0.9 0.78 0.42 1"),
+                self._box_visual("headlight_right", "%.3f %.3f %.3f 0 0 0" % (length * 0.535, -width * 0.24, height * 0.44), (length * 0.035, width * 0.22, height * 0.10), white, emissive="0.9 0.78 0.42 1"),
+                self._box_visual("tail_light_left", "-%.3f %.3f %.3f 0 0 0" % (length * 0.535, width * 0.24, height * 0.42), (length * 0.035, width * 0.20, height * 0.10), red, emissive="0.45 0.02 0.01 1"),
+                self._box_visual("tail_light_right", "-%.3f %.3f %.3f 0 0 0" % (length * 0.535, -width * 0.24, height * 0.42), (length * 0.035, width * 0.20, height * 0.10), red, emissive="0.45 0.02 0.01 1"),
+                self._box_visual("wheel_fl", "%.3f %.3f %.3f 0 0 0" % (length * 0.27, width * 0.48, height * 0.21), (length * 0.20, width * 0.13, height * 0.32), dark),
+                self._box_visual("wheel_fr", "%.3f %.3f %.3f 0 0 0" % (length * 0.27, -width * 0.48, height * 0.21), (length * 0.20, width * 0.13, height * 0.32), dark),
+                self._box_visual("wheel_rl", "-%.3f %.3f %.3f 0 0 0" % (length * 0.27, width * 0.48, height * 0.21), (length * 0.20, width * 0.13, height * 0.32), dark),
+                self._box_visual("wheel_rr", "-%.3f %.3f %.3f 0 0 0" % (length * 0.27, -width * 0.48, height * 0.21), (length * 0.20, width * 0.13, height * 0.32), dark),
+            ]
         name = html.escape(obstacle.name)
         return """<?xml version="1.0"?>
 <sdf version="1.6">
@@ -211,30 +426,7 @@ class DynamicObstacleController:
           </box>
         </geometry>
       </collision>
-      <visual name="body">
-        <pose>0 0 %.3f 0 0 0</pose>
-        <geometry>
-          <box>
-            <size>%.3f %.3f %.3f</size>
-          </box>
-        </geometry>
-        <material>
-          <ambient>%s</ambient>
-          <diffuse>%s</diffuse>
-        </material>
-      </visual>
-      <visual name="front_marker">
-        <pose>%.3f 0 %.3f 0 0 0</pose>
-        <geometry>
-          <box>
-            <size>0.06 %.3f %.3f</size>
-          </box>
-        </geometry>
-        <material>
-          <ambient>0.05 0.05 0.05 1</ambient>
-          <diffuse>0.05 0.05 0.05 1</diffuse>
-        </material>
-      </visual>
+%s
     </link>
   </model>
 </sdf>""" % (
@@ -243,16 +435,7 @@ class DynamicObstacleController:
             length,
             width,
             height,
-            height / 2.0,
-            length,
-            width,
-            height,
-            color,
-            color,
-            length / 2.0 + 0.031,
-            height / 2.0,
-            width,
-            height,
+            "\n".join(visuals),
         )
 
     def _sdf_for(self, obstacle):

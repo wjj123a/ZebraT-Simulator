@@ -46,6 +46,8 @@ class CostmapGoalResolver:
         dynamic_obstacle_path_inflation=0.42,
         dynamic_obstacle_prediction_timeout=1.0,
         dynamic_obstacle_prediction_horizon=1.5,
+        allow_unknown_fallback=False,
+        unknown_fallback_use_dynamic_obstacle_predictions=False,
         base_frame="base_footprint",
     ):
         self.costmap_topics = costmap_topics or [
@@ -69,6 +71,10 @@ class CostmapGoalResolver:
         self.dynamic_obstacle_path_inflation = float(dynamic_obstacle_path_inflation)
         self.dynamic_obstacle_prediction_timeout = float(dynamic_obstacle_prediction_timeout)
         self.dynamic_obstacle_prediction_horizon = max(0.0, float(dynamic_obstacle_prediction_horizon))
+        self.allow_unknown_fallback = bool(allow_unknown_fallback)
+        self.unknown_fallback_use_dynamic_obstacle_predictions = bool(
+            unknown_fallback_use_dynamic_obstacle_predictions
+        )
         self.base_frame = str(base_frame)
 
         self._costmaps = {}
@@ -150,9 +156,11 @@ class CostmapGoalResolver:
             return None
         return mx, my
 
-    def _cell_is_blocked(self, value):
+    def _cell_is_blocked(self, value, unknown_is_occupied=None):
         if value < 0:
-            return self.unknown_is_occupied
+            if unknown_is_occupied is None:
+                unknown_is_occupied = self.unknown_is_occupied
+            return bool(unknown_is_occupied)
         return value >= self.occupied_threshold
 
     @staticmethod
@@ -364,7 +372,7 @@ class CostmapGoalResolver:
                 return True
         return False
 
-    def _is_pose_safe_in_grid(self, pose, grid):
+    def _is_pose_safe_in_grid(self, pose, grid, unknown_is_occupied=None):
         transformed = self._transform_pose(pose, grid.header.frame_id)
         if transformed is None:
             return None
@@ -389,19 +397,20 @@ class CostmapGoalResolver:
                 if mx < 0 or my < 0 or mx >= grid.info.width or my >= grid.info.height:
                     return False
                 value = grid.data[my * grid.info.width + mx]
-                if self._cell_is_blocked(value):
+                if self._cell_is_blocked(value, unknown_is_occupied):
                     return False
         return True
 
-    def is_pose_safe(self, pose):
-        if self._is_on_dynamic_route(pose):
-            return False
-        if self._path_to_pose_blocked_by_dynamic_obstacles(pose):
-            return False
+    def is_pose_safe(self, pose, unknown_is_occupied=None, check_dynamic_obstacles=True):
+        if check_dynamic_obstacles:
+            if self._is_on_dynamic_route(pose):
+                return False
+            if self._path_to_pose_blocked_by_dynamic_obstacles(pose):
+                return False
 
         checked_any = False
         for grid in self._costmaps.values():
-            safe = self._is_pose_safe_in_grid(pose, grid)
+            safe = self._is_pose_safe_in_grid(pose, grid, unknown_is_occupied)
             if safe is None:
                 continue
             checked_any = True
@@ -418,7 +427,7 @@ class CostmapGoalResolver:
         candidate.pose.position.y = pose.pose.position.y + dy
         return candidate
 
-    def find_nearest_safe_pose(self, pose):
+    def find_nearest_safe_pose(self, pose, unknown_is_occupied=None, check_dynamic_obstacles=True):
         if self.search_step <= 0.0 or self.search_radius <= 0.0:
             return None
 
@@ -433,9 +442,43 @@ class CostmapGoalResolver:
                     radius * math.cos(angle),
                     radius * math.sin(angle),
                 )
-                if self.is_pose_safe(candidate):
+                if self.is_pose_safe(candidate, unknown_is_occupied, check_dynamic_obstacles):
                     return candidate
         return None
+
+    def _resolve_unknown_fallback(self, pose, name, waited, log_blocked):
+        if not self.allow_unknown_fallback or not self.unknown_is_occupied:
+            return None
+
+        check_dynamic = self.unknown_fallback_use_dynamic_obstacle_predictions
+        if self.is_pose_safe(pose, unknown_is_occupied=False, check_dynamic_obstacles=check_dynamic):
+            if log_blocked:
+                rospy.logwarn(
+                    "Allowing %s at (%.2f, %.2f) through unknown map cells; move_base will attempt planning with allow_unknown",
+                    name,
+                    pose.pose.position.x,
+                    pose.pose.position.y,
+                )
+            return ResolvedGoal(pose, waited=waited, reason="unknown_fallback")
+
+        candidate = self.find_nearest_safe_pose(
+            pose,
+            unknown_is_occupied=False,
+            check_dynamic_obstacles=check_dynamic,
+        )
+        if candidate is None:
+            return None
+
+        if log_blocked:
+            rospy.logwarn(
+                "Adjusted %s from (%.2f, %.2f) to unknown-space fallback pose (%.2f, %.2f)",
+                name,
+                pose.pose.position.x,
+                pose.pose.position.y,
+                candidate.pose.position.x,
+                candidate.pose.position.y,
+            )
+        return ResolvedGoal(candidate, adjusted=True, waited=waited, reason="unknown_fallback_relocated")
 
     def resolve_pose(self, pose, name="goal", wait=True, log_blocked=True):
         self.wait_for_costmaps()
@@ -465,6 +508,10 @@ class CostmapGoalResolver:
 
         candidate = self.find_nearest_safe_pose(pose)
         if candidate is None:
+            fallback = self._resolve_unknown_fallback(pose, name, waited, log_blocked)
+            if fallback is not None:
+                return fallback
+
             if log_blocked:
                 rospy.logerr(
                     "No safe replacement found for %s within %.2fm; rejecting unsafe target",

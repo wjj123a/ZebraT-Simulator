@@ -5,7 +5,7 @@
   <arg name="world_name" default="$(find zebrat)/worlds/area.world"/>
   <arg
     name="world_profile"
-    default="$(eval 'empty_wall' if 'empty_wall.world' in arg('world_name') else 'empty' if 'empty.world' in arg('world_name') else 'wall_right_angle' if 'wall_right_angle.world' in arg('world_name') else 'racecar_cones' if 'racecar_cones.world' in arg('world_name') else 'racecar_parking_1' if 'racecar_parking_1.world' in arg('world_name') else 'racecar_tunnel' if 'racecar_tunnel.world' in arg('world_name') else 'racecar_walker' if 'racecar_walker.world' in arg('world_name') else 'racecar_ar' if 'racecar_ar.world' in arg('world_name') else 'racecar' if 'racecar.world' in arg('world_name') else 'racetrack' if 'racetrack.world' in arg('world_name') else 'area' if 'area.world' in arg('world_name') else 'custom')"/>
+    default="$(eval 'empty_wall' if 'empty_wall.world' in arg('world_name') else 'empty' if 'empty.world' in arg('world_name') else 'wall_right_angle' if 'wall_right_angle.world' in arg('world_name') else 'racecar_cones' if 'racecar_cones.world' in arg('world_name') else 'racecar_parking_1' if 'racecar_parking_1.world' in arg('world_name') else 'racecar_tunnel' if 'racecar_tunnel.world' in arg('world_name') else 'racecar_walker' if 'racecar_walker.world' in arg('world_name') else 'racecar_ar' if 'racecar_ar.world' in arg('world_name') else 'racecar' if 'racecar.world' in arg('world_name') else 'racetrack' if 'racetrack.world' in arg('world_name') else 'area_realistic' if 'area_realistic.world' in arg('world_name') else 'area' if 'area.world' in arg('world_name') else 'custom')"/>
   <arg name="gui" default="true"/>
   <arg name="paused" default="true"/>
   <arg name="auto_unpause" default="true"/>
@@ -30,6 +30,8 @@
   <arg name="safe_goal_dynamic_obstacle_path_inflation" default="0.55"/>
   <arg name="safe_goal_dynamic_obstacle_prediction_timeout" default="1.0"/>
   <arg name="safe_goal_dynamic_obstacle_prediction_horizon" default="3.0"/>
+  <arg name="safe_goal_allow_unknown_fallback" default="true"/>
+  <arg name="safe_goal_unknown_fallback_use_dynamic_obstacle_predictions" default="false"/>
   <arg name="safe_goal_accept_xy_on_adjusted" default="false"/>
   <arg name="safe_goal_adjusted_xy_tolerance" default="0.25"/>
   <arg name="safe_goal_retry_rejected_goals" default="true"/>
@@ -51,13 +53,13 @@
   <arg name="map_file" default="$(find zebrat)/maps/area.yaml"/>
   <arg name="save_map" default="false"/>
   <arg name="map_output_prefix" default="$(find zebrat)/maps/$(arg world_profile)"/>
-  <arg name="gmapping_xmin" default="$(eval -8.0 if arg('world_profile') in ['empty', 'empty_wall', 'racecar', 'racecar_ar', 'racecar_parking_1'] else -2.0 if arg('world_profile') == 'wall_right_angle' else -8.0 if arg('world_profile') == 'racecar_cones' else -10.0 if arg('world_profile') == 'racecar_tunnel' else -10.0 if arg('world_profile') == 'racecar_walker' else -16.0 if arg('world_profile') == 'racetrack' else -40.0 if arg('world_profile') == 'area' else -20.0)"/>
-  <arg name="gmapping_ymin" default="$(eval -8.0 if arg('world_profile') in ['empty', 'empty_wall', 'racecar', 'racecar_ar', 'racecar_parking_1'] else -2.0 if arg('world_profile') == 'wall_right_angle' else -8.0 if arg('world_profile') == 'racecar_cones' else -5.0 if arg('world_profile') == 'racecar_tunnel' else -8.0 if arg('world_profile') == 'racecar_walker' else -10.0 if arg('world_profile') == 'racetrack' else -40.0 if arg('world_profile') == 'area' else -20.0)"/>
-  <arg name="gmapping_xmax" default="$(eval 8.0 if arg('world_profile') in ['empty', 'empty_wall', 'racecar', 'racecar_ar', 'racecar_parking_1'] else 5.0 if arg('world_profile') == 'wall_right_angle' else 10.0 if arg('world_profile') == 'racecar_cones' else 20.0 if arg('world_profile') == 'racecar_tunnel' else 10.0 if arg('world_profile') == 'racecar_walker' else 22.0 if arg('world_profile') == 'racetrack' else 40.0 if arg('world_profile') == 'area' else 20.0)"/>
-  <arg name="gmapping_ymax" default="$(eval 8.0 if arg('world_profile') in ['empty', 'empty_wall', 'racecar', 'racecar_ar', 'racecar_parking_1'] else 5.0 if arg('world_profile') == 'wall_right_angle' else 8.0 if arg('world_profile') == 'racecar_cones' else 30.0 if arg('world_profile') == 'racecar_tunnel' else 8.0 if arg('world_profile') == 'racecar_walker' else 12.0 if arg('world_profile') == 'racetrack' else 40.0 if arg('world_profile') == 'area' else 20.0)"/>
-  <arg name="gmapping_delta" default="$(eval 0.10 if arg('world_profile') == 'area' else 0.05)"/>
-  <arg name="x" default="$(eval 0.0 if arg('world_profile') in ['empty', 'racecar', 'custom'] else 1.95 if arg('world_profile') == 'area' else -2.0 if arg('world_profile') == 'empty_wall' else 1.0 if arg('world_profile') == 'wall_right_angle' else 0.0 if arg('world_profile') == 'racecar_ar' else 0.0 if arg('world_profile') == 'racecar_cones' else 1.8 if arg('world_profile') == 'racecar_parking_1' else 0.0 if arg('world_profile') == 'racecar_tunnel' else 0.0 if arg('world_profile') == 'racecar_walker' else -9.0 if arg('world_profile') == 'racetrack' else 0.0)"/>
-  <arg name="y" default="$(eval 0.0 if arg('world_profile') in ['empty', 'racecar', 'custom'] else -1.65 if arg('world_profile') == 'area' else 0.0 if arg('world_profile') == 'empty_wall' else 1.5 if arg('world_profile') == 'wall_right_angle' else -1.0 if arg('world_profile') == 'racecar_ar' else -1.5 if arg('world_profile') == 'racecar_cones' else -1.5 if arg('world_profile') == 'racecar_parking_1' else 0.0 if arg('world_profile') == 'racecar_tunnel' else 0.0 if arg('world_profile') == 'racecar_walker' else -2.0 if arg('world_profile') == 'racetrack' else 0.0)"/>
+  <arg name="gmapping_xmin" default="$(eval -8.0 if arg('world_profile') in ['empty', 'empty_wall', 'racecar', 'racecar_ar', 'racecar_parking_1'] else -2.0 if arg('world_profile') == 'wall_right_angle' else -8.0 if arg('world_profile') == 'racecar_cones' else -10.0 if arg('world_profile') == 'racecar_tunnel' else -10.0 if arg('world_profile') == 'racecar_walker' else -16.0 if arg('world_profile') == 'racetrack' else -40.0 if arg('world_profile') in ['area', 'area_realistic'] else -20.0)"/>
+  <arg name="gmapping_ymin" default="$(eval -8.0 if arg('world_profile') in ['empty', 'empty_wall', 'racecar', 'racecar_ar', 'racecar_parking_1'] else -2.0 if arg('world_profile') == 'wall_right_angle' else -8.0 if arg('world_profile') == 'racecar_cones' else -5.0 if arg('world_profile') == 'racecar_tunnel' else -8.0 if arg('world_profile') == 'racecar_walker' else -10.0 if arg('world_profile') == 'racetrack' else -40.0 if arg('world_profile') in ['area', 'area_realistic'] else -20.0)"/>
+  <arg name="gmapping_xmax" default="$(eval 8.0 if arg('world_profile') in ['empty', 'empty_wall', 'racecar', 'racecar_ar', 'racecar_parking_1'] else 5.0 if arg('world_profile') == 'wall_right_angle' else 10.0 if arg('world_profile') == 'racecar_cones' else 20.0 if arg('world_profile') == 'racecar_tunnel' else 10.0 if arg('world_profile') == 'racecar_walker' else 22.0 if arg('world_profile') == 'racetrack' else 40.0 if arg('world_profile') in ['area', 'area_realistic'] else 20.0)"/>
+  <arg name="gmapping_ymax" default="$(eval 8.0 if arg('world_profile') in ['empty', 'empty_wall', 'racecar', 'racecar_ar', 'racecar_parking_1'] else 5.0 if arg('world_profile') == 'wall_right_angle' else 8.0 if arg('world_profile') == 'racecar_cones' else 30.0 if arg('world_profile') == 'racecar_tunnel' else 8.0 if arg('world_profile') == 'racecar_walker' else 12.0 if arg('world_profile') == 'racetrack' else 40.0 if arg('world_profile') in ['area', 'area_realistic'] else 20.0)"/>
+  <arg name="gmapping_delta" default="$(eval 0.10 if arg('world_profile') in ['area', 'area_realistic'] else 0.05)"/>
+  <arg name="x" default="$(eval 0.0 if arg('world_profile') in ['empty', 'racecar', 'custom'] else 1.95 if arg('world_profile') in ['area', 'area_realistic'] else -2.0 if arg('world_profile') == 'empty_wall' else 1.0 if arg('world_profile') == 'wall_right_angle' else 0.0 if arg('world_profile') == 'racecar_ar' else 0.0 if arg('world_profile') == 'racecar_cones' else 1.8 if arg('world_profile') == 'racecar_parking_1' else 0.0 if arg('world_profile') == 'racecar_tunnel' else 0.0 if arg('world_profile') == 'racecar_walker' else -9.0 if arg('world_profile') == 'racetrack' else 0.0)"/>
+  <arg name="y" default="$(eval 0.0 if arg('world_profile') in ['empty', 'racecar', 'custom'] else -1.65 if arg('world_profile') in ['area', 'area_realistic'] else 0.0 if arg('world_profile') == 'empty_wall' else 1.5 if arg('world_profile') == 'wall_right_angle' else -1.0 if arg('world_profile') == 'racecar_ar' else -1.5 if arg('world_profile') == 'racecar_cones' else -1.5 if arg('world_profile') == 'racecar_parking_1' else 0.0 if arg('world_profile') == 'racecar_tunnel' else 0.0 if arg('world_profile') == 'racecar_walker' else -2.0 if arg('world_profile') == 'racetrack' else 0.0)"/>
   <arg name="z" default="0.04075"/>
   <arg name="yaw" default="$(eval 0.0 if arg('world_profile') not in ['racecar_parking_1'] else 1.57)"/>
   <arg name="cmd_vel_max_linear_x" default="0.22"/>
@@ -424,6 +426,9 @@
       <rosparam command="load" file="$(find zebrat)/config/navigation_move_base.yaml" ns="move_base" />
       <rosparam if="$(eval arg('local_planner') == 'dwa')" command="load" file="$(find zebrat)/config/navigation_dwa.yaml" ns="move_base" />
       <rosparam if="$(eval arg('local_planner') == 'teb')" command="load" file="$(find zebrat)/config/navigation_teb.yaml" ns="move_base" />
+      <param
+        name="move_base/local_costmap/obstacle_layer/observation_sources"
+        value="$(eval 'laser_scan_sensor depth_cloud_sensor' if arg('enable_depth_camera') else 'laser_scan_sensor')" />
 
       <param name="move_base/base_local_planner" value="$(eval 'teb_local_planner/TebLocalPlannerROS' if arg('local_planner') == 'teb' else 'dwa_local_planner/DWAPlannerROS')" />
       <param if="$(eval arg('local_planner') == 'dwa')" name="move_base/DWAPlannerROS/max_vel_x" value="$(arg cmd_vel_max_linear_x)" />
@@ -464,6 +469,8 @@
         <param name="dynamic_obstacle_path_inflation" value="$(arg safe_goal_dynamic_obstacle_path_inflation)" />
         <param name="dynamic_obstacle_prediction_timeout" value="$(arg safe_goal_dynamic_obstacle_prediction_timeout)" />
         <param name="dynamic_obstacle_prediction_horizon" value="$(arg safe_goal_dynamic_obstacle_prediction_horizon)" />
+        <param name="allow_unknown_fallback" value="$(arg safe_goal_allow_unknown_fallback)" />
+        <param name="unknown_fallback_use_dynamic_obstacle_predictions" value="$(arg safe_goal_unknown_fallback_use_dynamic_obstacle_predictions)" />
         <param name="accept_xy_on_adjusted" value="$(arg safe_goal_accept_xy_on_adjusted)" />
         <param name="adjusted_xy_tolerance" value="$(arg safe_goal_adjusted_xy_tolerance)" />
         <param name="retry_rejected_goals" value="$(arg safe_goal_retry_rejected_goals)" />

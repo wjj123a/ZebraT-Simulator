@@ -84,6 +84,11 @@ class NavigationRegression:
                 dynamic_obstacle_path_inflation=rospy.get_param("~safe_goal_dynamic_obstacle_path_inflation", 0.42),
                 dynamic_obstacle_prediction_timeout=rospy.get_param("~safe_goal_dynamic_obstacle_prediction_timeout", 1.0),
                 dynamic_obstacle_prediction_horizon=rospy.get_param("~safe_goal_dynamic_obstacle_prediction_horizon", 1.5),
+                allow_unknown_fallback=rospy.get_param("~safe_goal_allow_unknown_fallback", False),
+                unknown_fallback_use_dynamic_obstacle_predictions=rospy.get_param(
+                    "~safe_goal_unknown_fallback_use_dynamic_obstacle_predictions",
+                    False,
+                ),
             )
         self._last_scan_min = float("inf")
         self._last_command_wall = time.monotonic()

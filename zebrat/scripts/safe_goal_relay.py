@@ -49,6 +49,11 @@ class SafeGoalRelay:
             dynamic_obstacle_path_inflation=rospy.get_param("~dynamic_obstacle_path_inflation", 0.42),
             dynamic_obstacle_prediction_timeout=rospy.get_param("~dynamic_obstacle_prediction_timeout", 1.0),
             dynamic_obstacle_prediction_horizon=rospy.get_param("~dynamic_obstacle_prediction_horizon", 1.5),
+            allow_unknown_fallback=rospy.get_param("~allow_unknown_fallback", False),
+            unknown_fallback_use_dynamic_obstacle_predictions=rospy.get_param(
+                "~unknown_fallback_use_dynamic_obstacle_predictions",
+                False,
+            ),
             base_frame=self.base_frame,
         )
         self.publisher = rospy.Publisher(self.output_topic, PoseStamped, queue_size=1)

@@ -10,6 +10,7 @@ from costmap_converter.msg import ObstacleArrayMsg
 from costmap_converter.msg import ObstacleMsg
 from geometry_msgs.msg import Point32
 from geometry_msgs.msg import PoseStamped
+from nav_msgs.msg import OccupancyGrid
 
 
 SCRIPT_DIR = os.path.join(os.path.dirname(__file__), "..", "scripts")
@@ -40,6 +41,17 @@ def _obstacle(obstacle_id, x, y, radius, vx, vy):
     obstacle.velocities.twist.linear.x = vx
     obstacle.velocities.twist.linear.y = vy
     return obstacle
+
+
+def _grid(width, height, resolution, data):
+    grid = OccupancyGrid()
+    grid.header.frame_id = "map"
+    grid.info.width = width
+    grid.info.height = height
+    grid.info.resolution = resolution
+    grid.info.origin.orientation.w = 1.0
+    grid.data = list(data)
+    return grid
 
 
 class DynamicPathSafetyTest(unittest.TestCase):
@@ -73,6 +85,65 @@ class DynamicPathSafetyTest(unittest.TestCase):
         )
 
         self.assertFalse(resolver._path_to_pose_blocked_by_dynamic_obstacles(_pose(3.45, -2.80)))
+
+
+class UnknownFallbackGoalSafetyTest(unittest.TestCase):
+    def _resolver(self, grid, allow_unknown_fallback=True, use_dynamic_on_fallback=False):
+        resolver = CostmapGoalResolver.__new__(CostmapGoalResolver)
+        resolver.occupied_threshold = 65
+        resolver.unknown_is_occupied = True
+        resolver.target_check_radius = 0.0
+        resolver.search_radius = 0.0
+        resolver.search_step = 0.10
+        resolver.wait_timeout = 0.0
+        resolver.wait_check_period = 0.5
+        resolver.costmap_wait_timeout = 0.0
+        resolver.use_dynamic_routes = False
+        resolver.dynamic_route_inflation = 0.42
+        resolver.use_dynamic_obstacle_predictions = True
+        resolver.dynamic_obstacle_path_inflation = 0.42
+        resolver.dynamic_obstacle_prediction_timeout = 1.0
+        resolver.dynamic_obstacle_prediction_horizon = 1.0
+        resolver.allow_unknown_fallback = allow_unknown_fallback
+        resolver.unknown_fallback_use_dynamic_obstacle_predictions = use_dynamic_on_fallback
+        resolver.base_frame = "base_footprint"
+        resolver._costmaps = {"test": grid}
+        resolver._dynamic_obstacles = {}
+        resolver._dynamic_route_segments = []
+        resolver.wait_for_costmaps = lambda: True
+        resolver._transform_pose = lambda pose, _frame_id: pose
+        resolver._current_pose = lambda _frame_id: _pose(0.0, 0.0)
+        return resolver
+
+    def test_unknown_goal_is_allowed_only_as_fallback(self):
+        resolver = self._resolver(_grid(3, 3, 1.0, [-1] * 9))
+
+        resolved = resolver.resolve_pose(_pose(1.0, 1.0), "unknown goal", wait=False, log_blocked=False)
+
+        self.assertFalse(resolved.blocked)
+        self.assertEqual(resolved.reason, "unknown_fallback")
+
+    def test_occupied_goal_is_not_allowed_by_unknown_fallback(self):
+        data = [-1] * 9
+        data[4] = 100
+        resolver = self._resolver(_grid(3, 3, 1.0, data))
+
+        resolved = resolver.resolve_pose(_pose(1.0, 1.0), "occupied goal", wait=False, log_blocked=False)
+
+        self.assertTrue(resolved.blocked)
+        self.assertEqual(resolved.reason, "no_replacement")
+
+    def test_unknown_fallback_can_bypass_conservative_dynamic_prediction(self):
+        message = ObstacleArrayMsg()
+        message.header.frame_id = "map"
+        message.obstacles.append(_obstacle(18, 0.5, 0.0, 0.30, 1.0, 0.0))
+        resolver = self._resolver(_grid(3, 3, 1.0, [-1] * 9))
+        resolver._dynamic_obstacles = {"test": (message, time.monotonic())}
+
+        resolved = resolver.resolve_pose(_pose(2.0, 0.0), "unknown dynamic goal", wait=False, log_blocked=False)
+
+        self.assertFalse(resolved.blocked)
+        self.assertEqual(resolved.reason, "unknown_fallback")
 
 
 class _FakePublisher:

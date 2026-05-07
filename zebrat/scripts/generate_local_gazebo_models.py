@@ -316,9 +316,227 @@ def ground_plane_model():
 """
 
 
+def sdf_material(color, emissive=None, specular=None):
+    r, g, b, a = color
+    er, eg, eb, ea = emissive or rgba(0.0, 0.0, 0.0, 1.0)
+    sr, sg, sb, sa = specular or rgba(0.06, 0.06, 0.06, 1.0)
+    return f"""        <material>
+          <ambient>{r:.4f} {g:.4f} {b:.4f} {a:.4f}</ambient>
+          <diffuse>{r:.4f} {g:.4f} {b:.4f} {a:.4f}</diffuse>
+          <specular>{sr:.4f} {sg:.4f} {sb:.4f} {sa:.4f}</specular>
+          <emissive>{er:.4f} {eg:.4f} {eb:.4f} {ea:.4f}</emissive>
+        </material>"""
+
+
+def box_link(name, pose, size, color, collision=False, emissive=None):
+    sx, sy, sz = size
+    collision_block = ""
+    if collision:
+        collision_block = f"""
+      <collision name="collision">
+        <geometry><box><size>{sx:.4f} {sy:.4f} {sz:.4f}</size></box></geometry>
+      </collision>"""
+    return f"""    <link name="{name}">
+      <pose>{pose}</pose>{collision_block}
+      <visual name="visual">
+        <geometry><box><size>{sx:.4f} {sy:.4f} {sz:.4f}</size></box></geometry>
+{sdf_material(color, emissive=emissive)}
+      </visual>
+    </link>"""
+
+
+def cylinder_link(name, pose, radius, length, color, collision=False):
+    collision_block = ""
+    if collision:
+        collision_block = f"""
+      <collision name="collision">
+        <geometry><cylinder><radius>{radius:.4f}</radius><length>{length:.4f}</length></cylinder></geometry>
+      </collision>"""
+    return f"""    <link name="{name}">
+      <pose>{pose}</pose>{collision_block}
+      <visual name="visual">
+        <geometry><cylinder><radius>{radius:.4f}</radius><length>{length:.4f}</length></cylinder></geometry>
+{sdf_material(color)}
+      </visual>
+    </link>"""
+
+
+def sphere_link(name, pose, radius, color, collision=False):
+    collision_block = ""
+    if collision:
+        collision_block = f"""
+      <collision name="collision">
+        <geometry><sphere><radius>{radius:.4f}</radius></sphere></geometry>
+      </collision>"""
+    return f"""    <link name="{name}">
+      <pose>{pose}</pose>{collision_block}
+      <visual name="visual">
+        <geometry><sphere><radius>{radius:.4f}</radius></sphere></geometry>
+{sdf_material(color)}
+      </visual>
+    </link>"""
+
+
+def realistic_road_layout_model():
+    asphalt = rgba(0.055, 0.058, 0.060)
+    worn_asphalt = rgba(0.095, 0.095, 0.090)
+    concrete = rgba(0.58, 0.56, 0.52)
+    curb = rgba(0.74, 0.72, 0.68)
+    grass = rgba(0.18, 0.34, 0.16)
+    grass_dark = rgba(0.12, 0.26, 0.13)
+    yellow = rgba(0.95, 0.72, 0.10)
+    white = rgba(0.93, 0.92, 0.86)
+    brick = rgba(0.42, 0.23, 0.18)
+    links = [
+        box_link("grass_north_west", "-20 20 0.003 0 0 0", (30, 30, 0.006), grass, False),
+        box_link("grass_north_east", "20 20 0.003 0 0 0", (30, 30, 0.006), tint(grass, 0.03), False),
+        box_link("grass_south_west", "-20 -20 0.003 0 0 0", (30, 30, 0.006), grass_dark, False),
+        box_link("grass_south_east", "20 -20 0.003 0 0 0", (30, 30, 0.006), grass, False),
+        box_link("asphalt_east_west", "0 0 0.010 0 0 0", (62, 7.4, 0.020), asphalt, False),
+        box_link("asphalt_north_south", "0 0 0.011 0 0 0", (7.4, 62, 0.020), asphalt, False),
+        box_link("intersection_worn_patch", "0 0 0.023 0 0 0", (12.5, 12.5, 0.008), worn_asphalt, False),
+        box_link("parking_pullout_south", "17 -6.5 0.014 0 0 0", (20, 3.0, 0.016), worn_asphalt, False),
+        box_link("parking_pullout_north", "-17 6.5 0.014 0 0 0", (20, 3.0, 0.016), worn_asphalt, False),
+        box_link("sidewalk_north", "0 8.8 0.022 0 0 0", (62, 2.2, 0.040), concrete, False),
+        box_link("sidewalk_south", "0 -8.8 0.022 0 0 0", (62, 2.2, 0.040), concrete, False),
+        box_link("asphalt_east_service_lane", "8.7 0 0.012 0 0 0", (3.0, 14.0, 0.020), asphalt, False),
+        box_link("sidewalk_east", "11.1 0 0.022 0 0 0", (1.8, 62, 0.040), concrete, False),
+        box_link("sidewalk_west", "-8.8 0 0.022 0 0 0", (2.2, 62, 0.040), concrete, False),
+        box_link("plaza_pavers_ne", "12 12 0.026 0 0 0", (6.2, 6.2, 0.030), brick, False),
+        box_link("plaza_pavers_sw", "-12 -12 0.026 0 0 0", (6.2, 6.2, 0.030), brick, False),
+    ]
+
+    for index, x in enumerate([-24.0, 24.0]):
+        links.append(box_link(f"curb_north_{index}", f"{x} 4.0 0.060 0 0 0", (24, 0.18, 0.12), curb, True))
+        links.append(box_link(f"curb_south_{index}", f"{x} -4.0 0.060 0 0 0", (24, 0.18, 0.12), curb, True))
+    for index, y in enumerate([-24.0, 24.0]):
+        links.append(box_link(f"curb_east_{index}", f"4.0 {y} 0.060 0 0 0", (0.18, 24, 0.12), curb, True))
+        links.append(box_link(f"curb_west_{index}", f"-4.0 {y} 0.060 0 0 0", (0.18, 24, 0.12), curb, True))
+
+    for index, x in enumerate([-28, -20, -12, 12, 20, 28]):
+        links.append(box_link(f"lane_dash_ew_{index}", f"{x} 0 0.030 0 0 0", (4.2, 0.14, 0.012), yellow, False))
+    for index, y in enumerate([-28, -20, -12, 12, 20, 28]):
+        links.append(box_link(f"lane_dash_ns_{index}", f"0 {y} 0.031 0 0 0", (0.14, 4.2, 0.012), yellow, False))
+    for index, y in enumerate([-3.15, 3.15]):
+        links.append(box_link(f"edge_line_ew_left_{index}", f"-22 {y} 0.032 0 0 0", (17, 0.09, 0.012), white, False))
+        links.append(box_link(f"edge_line_ew_right_{index}", f"22 {y} 0.032 0 0 0", (17, 0.09, 0.012), white, False))
+    for index, x in enumerate([-3.15, 3.15]):
+        links.append(box_link(f"edge_line_ns_bottom_{index}", f"{x} -22 0.033 0 0 0", (0.09, 17, 0.012), white, False))
+        links.append(box_link(f"edge_line_ns_top_{index}", f"{x} 22 0.033 0 0 0", (0.09, 17, 0.012), white, False))
+
+    stripe_id = 0
+    for x in [-5.8, 5.8]:
+        for y in [-2.7, -1.8, -0.9, 0.0, 0.9, 1.8, 2.7]:
+            links.append(box_link(f"crosswalk_x_{stripe_id}", f"{x} {y} 0.035 0 0 0", (0.42, 0.55, 0.014), white, False))
+            stripe_id += 1
+    for y in [-5.8, 5.8]:
+        for x in [-2.7, -1.8, -0.9, 0.0, 0.9, 1.8, 2.7]:
+            links.append(box_link(f"crosswalk_y_{stripe_id}", f"{x} {y} 0.036 0 0 0", (0.55, 0.42, 0.014), white, False))
+            stripe_id += 1
+
+    for index, x in enumerate([10.5, 14.5, 18.5, 22.5]):
+        links.append(box_link(f"parking_stripe_south_{index}", f"{x} -6.5 0.034 0 0 0", (0.10, 2.4, 0.012), white, False))
+    for index, x in enumerate([-10.5, -14.5, -18.5, -22.5]):
+        links.append(box_link(f"parking_stripe_north_{index}", f"{x} 6.5 0.034 0 0 0", (0.10, 2.4, 0.012), white, False))
+
+    return f"""<?xml version="1.0"?>
+<sdf version="1.6">
+  <model name="zebrat_realistic_road_layout">
+    <static>true</static>
+{chr(10).join(links)}
+  </model>
+</sdf>
+"""
+
+
+def street_tree_model():
+    return f"""<?xml version="1.0"?>
+<sdf version="1.6">
+  <model name="zebrat_street_tree">
+    <static>true</static>
+{cylinder_link("trunk", "0 0 1.15 0 0 0", 0.18, 2.3, rgba(0.34, 0.20, 0.10), True)}
+{sphere_link("lower_canopy", "0.10 0.00 2.70 0 0 0", 1.25, rgba(0.10, 0.34, 0.14), False)}
+{sphere_link("upper_canopy", "-0.20 0.10 3.45 0 0 0", 1.00, rgba(0.14, 0.42, 0.17), False)}
+  </model>
+</sdf>
+"""
+
+
+def street_light_model():
+    warm = rgba(1.0, 0.82, 0.42)
+    return f"""<?xml version="1.0"?>
+<sdf version="1.6">
+  <model name="zebrat_street_light">
+    <static>true</static>
+{cylinder_link("pole", "0 0 2.3 0 0 0", 0.08, 4.6, rgba(0.38, 0.40, 0.42), True)}
+{box_link("arm", "0.62 0 4.45 0 0 0", (1.25, 0.10, 0.10), rgba(0.38, 0.40, 0.42), False)}
+{box_link("lamp_head", "1.25 0 4.30 0 0 0", (0.38, 0.28, 0.16), rgba(0.12, 0.12, 0.10), False, emissive=warm)}
+  </model>
+</sdf>
+"""
+
+
+def traffic_sign_model():
+    return f"""<?xml version="1.0"?>
+<sdf version="1.6">
+  <model name="zebrat_traffic_sign">
+    <static>true</static>
+{cylinder_link("pole", "0 0 1.25 0 0 0", 0.045, 2.5, rgba(0.48, 0.48, 0.46), True)}
+{box_link("sign_plate", "0 0 2.25 0 0 0", (0.08, 0.78, 0.52), rgba(0.88, 0.12, 0.10), True)}
+{box_link("sign_face", "-0.045 0 2.25 0 0 0", (0.012, 0.60, 0.34), rgba(0.94, 0.94, 0.88), False)}
+  </model>
+</sdf>
+"""
+
+
+def guardrail_model():
+    metal = rgba(0.62, 0.64, 0.63)
+    post = rgba(0.44, 0.46, 0.45)
+    return f"""<?xml version="1.0"?>
+<sdf version="1.6">
+  <model name="zebrat_guardrail">
+    <static>true</static>
+{box_link("rail_upper", "0 0 0.74 0 0 0", (5.2, 0.14, 0.18), metal, True)}
+{box_link("rail_lower", "0 0 0.43 0 0 0", (5.2, 0.10, 0.14), metal, True)}
+{box_link("post_left", "-2.2 0 0.36 0 0 0", (0.14, 0.16, 0.72), post, True)}
+{box_link("post_mid", "0 0 0.36 0 0 0", (0.14, 0.16, 0.72), post, True)}
+{box_link("post_right", "2.2 0 0.36 0 0 0", (0.14, 0.16, 0.72), post, True)}
+  </model>
+</sdf>
+"""
+
+
+def parked_car_model():
+    dark = rgba(0.07, 0.08, 0.09)
+    body = rgba(0.18, 0.32, 0.56)
+    glass = rgba(0.22, 0.38, 0.48)
+    trim = rgba(0.78, 0.78, 0.72)
+    return f"""<?xml version="1.0"?>
+<sdf version="1.6">
+  <model name="zebrat_parked_car">
+    <static>true</static>
+{box_link("body", "0 0 0.42 0 0 0", (3.8, 1.7, 0.78), body, True)}
+{box_link("cabin", "-0.15 0 0.96 0 0 0", (1.75, 1.35, 0.70), glass, False)}
+{box_link("front_bumper", "1.98 0 0.30 0 0 0", (0.18, 1.62, 0.28), trim, False)}
+{box_link("rear_bumper", "-1.98 0 0.30 0 0 0", (0.18, 1.62, 0.28), trim, False)}
+{box_link("wheel_fl", "1.05 0.83 0.28 0 0 0", (0.55, 0.18, 0.52), dark, True)}
+{box_link("wheel_fr", "1.05 -0.83 0.28 0 0 0", (0.55, 0.18, 0.52), dark, True)}
+{box_link("wheel_rl", "-1.05 0.83 0.28 0 0 0", (0.55, 0.18, 0.52), dark, True)}
+{box_link("wheel_rr", "-1.05 -0.83 0.28 0 0 0", (0.55, 0.18, 0.52), dark, True)}
+  </model>
+</sdf>
+"""
+
+
 SPECIAL_MODELS = {
     "sun": sun_model(),
     "ground_plane": ground_plane_model(),
+    "zebrat_realistic_road_layout": realistic_road_layout_model(),
+    "zebrat_street_tree": street_tree_model(),
+    "zebrat_street_light": street_light_model(),
+    "zebrat_traffic_sign": traffic_sign_model(),
+    "zebrat_guardrail": guardrail_model(),
+    "zebrat_parked_car": parked_car_model(),
     "racecar_description/models/cone": static_box_model("cone", (0.25, 0.25, 0.35), rgba(1.0, 0.45, 0.1)),
     "racecar_description/models/ar_tags/marker1": static_box_model("marker1", (0.12, 0.02, 0.12), rgba(0.95, 0.95, 0.95)),
     "racecar_description/models/parking_1": parking_model(),
