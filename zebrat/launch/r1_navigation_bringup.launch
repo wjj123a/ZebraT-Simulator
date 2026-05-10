@@ -176,7 +176,7 @@
     <param name="forward_assist_min_carrot_dist" value="0.35" />
     <param name="forward_assist_max_age" value="2.0" />
     <param name="forward_assist_steering_gain" value="1.0" />
-    <param name="angular_input_mode" value="$(eval 'steering_angle' if arg('local_planner') == 'teb' else 'yaw_rate')" />
+    <param name="angular_input_mode" value="$(eval 'yaw_rate' if arg('local_planner') == 'dwa' else 'steering_angle')" />
   </node>
 
   <node
@@ -426,11 +426,12 @@
       <rosparam command="load" file="$(find zebrat)/config/navigation_move_base.yaml" ns="move_base" />
       <rosparam if="$(eval arg('local_planner') == 'dwa')" command="load" file="$(find zebrat)/config/navigation_dwa.yaml" ns="move_base" />
       <rosparam if="$(eval arg('local_planner') == 'teb')" command="load" file="$(find zebrat)/config/navigation_teb.yaml" ns="move_base" />
+      <rosparam if="$(eval arg('local_planner') == 'pure_pursuit')" command="load" file="$(find zebrat)/config/navigation_pure_pursuit.yaml" ns="move_base" />
       <param
         name="move_base/local_costmap/obstacle_layer/observation_sources"
         value="$(eval 'laser_scan_sensor depth_cloud_sensor' if arg('enable_depth_camera') else 'laser_scan_sensor')" />
 
-      <param name="move_base/base_local_planner" value="$(eval 'teb_local_planner/TebLocalPlannerROS' if arg('local_planner') == 'teb' else 'dwa_local_planner/DWAPlannerROS')" />
+      <param name="move_base/base_local_planner" value="$(eval 'zebrat/AckermannPurePursuitLocalPlanner' if arg('local_planner') == 'pure_pursuit' else 'teb_local_planner/TebLocalPlannerROS' if arg('local_planner') == 'teb' else 'dwa_local_planner/DWAPlannerROS')" />
       <param if="$(eval arg('local_planner') == 'dwa')" name="move_base/DWAPlannerROS/max_vel_x" value="$(arg cmd_vel_max_linear_x)" />
       <param if="$(eval arg('local_planner') == 'dwa')" name="move_base/DWAPlannerROS/max_vel_trans" value="$(arg cmd_vel_max_linear_x)" />
       <param if="$(eval arg('local_planner') == 'dwa')" name="move_base/DWAPlannerROS/max_vel_theta" value="$(arg cmd_vel_max_angular_z)" />
@@ -441,6 +442,9 @@
       <param if="$(eval arg('local_planner') == 'teb')" name="move_base/TebLocalPlannerROS/max_vel_x_backwards" value="$(arg planner_max_reverse_x)" />
       <param if="$(eval arg('local_planner') == 'teb')" name="move_base/TebLocalPlannerROS/acc_lim_x" value="$(arg cmd_vel_max_linear_accel)" />
       <param if="$(eval arg('local_planner') == 'teb')" name="move_base/TebLocalPlannerROS/acc_lim_theta" value="$(arg cmd_vel_max_angular_accel)" />
+      <param if="$(eval arg('local_planner') == 'pure_pursuit')" name="move_base/AckermannPurePursuitLocalPlanner/max_vel_x" value="$(arg cmd_vel_max_linear_x)" />
+      <param if="$(eval arg('local_planner') == 'pure_pursuit')" name="move_base/AckermannPurePursuitLocalPlanner/max_vel_x_backwards" value="$(arg planner_max_reverse_x)" />
+      <param if="$(eval arg('local_planner') == 'pure_pursuit')" name="move_base/AckermannPurePursuitLocalPlanner/max_steering_angle" value="$(arg ackermann_nav_max_steering_angle)" />
 
       <node
         name="move_base"

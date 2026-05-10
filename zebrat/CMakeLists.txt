@@ -120,7 +120,9 @@ find_package(catkin REQUIRED COMPONENTS
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
   INCLUDE_DIRS include
-  LIBRARIES zebrat_hybrid_a_star_global_planner
+  LIBRARIES
+    zebrat_ackermann_pure_pursuit_local_planner
+    zebrat_hybrid_a_star_global_planner
   CATKIN_DEPENDS ackermann_msgs base_local_planner costmap_2d costmap_converter gazebo_msgs geometry_msgs nav_core nav_msgs pluginlib roscpp rospy sensor_msgs std_msgs std_srvs tf tf2 tf2_geometry_msgs tf2_ros
 #  DEPENDS system_lib
 )
@@ -140,7 +142,15 @@ add_library(zebrat_hybrid_a_star_global_planner
   src/hybrid_a_star_global_planner.cpp
 )
 
+add_library(zebrat_ackermann_pure_pursuit_local_planner
+  src/ackermann_pure_pursuit_local_planner.cpp
+)
+
 target_link_libraries(zebrat_hybrid_a_star_global_planner
+  ${catkin_LIBRARIES}
+)
+
+target_link_libraries(zebrat_ackermann_pure_pursuit_local_planner
   ${catkin_LIBRARIES}
 )
 
@@ -245,7 +255,9 @@ endif()
 # )
 
 ## Mark other files for installation (e.g. launch and bag files, etc.)
-install(TARGETS zebrat_hybrid_a_star_global_planner
+install(TARGETS
+  zebrat_ackermann_pure_pursuit_local_planner
+  zebrat_hybrid_a_star_global_planner
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   RUNTIME DESTINATION ${CATKIN_GLOBAL_BIN_DESTINATION}

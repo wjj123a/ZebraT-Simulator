@@ -85,7 +85,7 @@ fi
 
 launch_robot="r1"
 launch_navigation="true"
-launch_world="$ROOT_DIR/zebrat/worlds/area.world"
+launch_world="$ROOT_DIR/zebrat/worlds/area_realistic.world"
 launch_run_mode="mapping"
 launch_navigation_mode="slam"
 launch_navigation_backend="gmapping"

@@ -1,0 +1,18 @@
+AckermannPurePursuitLocalPlanner:
+  transform_tolerance: 0.10
+  wheelbase: 0.41893
+  lookahead_distance: 0.80
+  min_lookahead_distance: 0.35
+  max_vel_x: 0.22
+  min_vel_x: 0.04
+  max_vel_x_backwards: 0.06
+  max_steering_angle: 0.42
+  slowdown_distance: 0.80
+  xy_goal_tolerance: 0.30
+  yaw_goal_tolerance: 0.35
+  prune_distance: 0.25
+  steering_speed_scale: 0.55
+  collision_check_time: 1.20
+  collision_check_step: 0.10
+  allow_reverse: true
+  publish_local_plan: true

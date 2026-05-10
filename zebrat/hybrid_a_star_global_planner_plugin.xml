@@ -8,3 +8,14 @@
     </description>
   </class>
 </library>
+
+<library path="lib/libzebrat_ackermann_pure_pursuit_local_planner">
+  <class
+    name="zebrat/AckermannPurePursuitLocalPlanner"
+    type="zebrat::AckermannPurePursuitLocalPlanner"
+    base_class_type="nav_core::BaseLocalPlanner">
+    <description>
+      Lightweight Ackermann pure pursuit local planner for following curvature-feasible global paths.
+    </description>
+  </class>
+</library>
