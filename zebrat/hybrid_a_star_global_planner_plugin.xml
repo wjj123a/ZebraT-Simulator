@@ -1,0 +1,10 @@
+<library path="lib/libzebrat_hybrid_a_star_global_planner">
+  <class
+    name="zebrat/HybridAStarGlobalPlanner"
+    type="zebrat::HybridAStarGlobalPlanner"
+    base_class_type="nav_core::BaseGlobalPlanner">
+    <description>
+      Hybrid A* global planner for Ackermann-style ZebraT navigation.
+    </description>
+  </class>
+</library>

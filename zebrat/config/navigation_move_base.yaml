@@ -8,7 +8,7 @@ oscillation_distance: 0.05
 recovery_behavior_enabled: true
 clearing_rotation_allowed: false
 max_planning_retries: 3
-base_global_planner: global_planner/GlobalPlanner
+base_global_planner: zebrat/HybridAStarGlobalPlanner
 base_local_planner: dwa_local_planner/DWAPlannerROS
 recovery_behaviors:
   - {name: conservative_reset, type: clear_costmap_recovery/ClearCostmapRecovery}
@@ -17,14 +17,21 @@ conservative_reset:
   reset_distance: 1.5
 aggressive_reset:
   reset_distance: 3.0
-GlobalPlanner:
+HybridAStarGlobalPlanner:
   allow_unknown: true
-  default_tolerance: 0.25
-  use_dijkstra: true
-  use_quadratic: true
-  use_grid_path: false
-  old_navfn_behavior: false
+  minimum_turning_radius: 0.98
+  step_size: 0.20
+  yaw_bins: 72
+  max_iterations: 30000
+  allow_reverse: true
+  goal_xy_tolerance: 0.25
+  goal_yaw_tolerance: 0.35
+  analytic_expansion_max_length: 0.60
+  reverse_penalty: 1.8
+  direction_change_penalty: 1.5
+  steering_change_penalty: 0.15
   lethal_cost: 253
-  neutral_cost: 66
-  cost_factor: 0.55
-  publish_potential: false
+  neutral_cost: 1.0
+  cost_factor: 2.0
+  footprint_padding: 0.01
+  publish_plan: true

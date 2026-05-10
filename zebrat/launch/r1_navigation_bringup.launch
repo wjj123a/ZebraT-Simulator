@@ -170,7 +170,7 @@
     <param name="steering_smoothing_alpha" value="$(arg ackermann_steering_smoothing_alpha)" />
     <param name="steering_deadband" value="$(arg ackermann_steering_deadband)" />
     <param name="goal_topic" value="/move_base/current_goal" />
-    <param name="global_plan_topic" value="/move_base/GlobalPlanner/plan" />
+    <param name="global_plan_topic" value="/move_base/HybridAStarGlobalPlanner/plan" />
     <param name="forward_assist_speed" value="0.08" />
     <param name="forward_assist_carrot_dist" value="1.0" />
     <param name="forward_assist_min_carrot_dist" value="0.35" />

@@ -43,7 +43,7 @@ class TwistToAckermann:
         )
         self.steering_deadband = abs(float(rospy.get_param("~steering_deadband", 0.025)))
         self.goal_topic = rospy.get_param("~goal_topic", "/move_base/current_goal")
-        self.global_plan_topic = rospy.get_param("~global_plan_topic", "/move_base/GlobalPlanner/plan")
+        self.global_plan_topic = rospy.get_param("~global_plan_topic", "/move_base/HybridAStarGlobalPlanner/plan")
         self.forward_assist_speed = abs(
             float(rospy.get_param("~forward_assist_speed", self.min_turn_speed))
         )

@@ -3,22 +3,29 @@ project(zebrat)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
 # add_compile_options(-std=c++11)
+add_compile_options(-std=c++14)
 
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
   ackermann_msgs
+  base_local_planner
+  costmap_2d
   costmap_converter
   gazebo_msgs
   geometry_msgs
+  nav_core
   nav_msgs
+  pluginlib
   roscpp
   rospy
   sensor_msgs
   std_msgs
   std_srvs
   tf
+  tf2
+  tf2_geometry_msgs
   tf2_ros
 )
 
@@ -112,9 +119,9 @@ find_package(catkin REQUIRED COMPONENTS
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
-#  INCLUDE_DIRS include
-#  LIBRARIES zebrat
-  CATKIN_DEPENDS ackermann_msgs costmap_converter gazebo_msgs geometry_msgs nav_msgs roscpp rospy sensor_msgs std_msgs std_srvs tf tf2_ros
+  INCLUDE_DIRS include
+  LIBRARIES zebrat_hybrid_a_star_global_planner
+  CATKIN_DEPENDS ackermann_msgs base_local_planner costmap_2d costmap_converter gazebo_msgs geometry_msgs nav_core nav_msgs pluginlib roscpp rospy sensor_msgs std_msgs std_srvs tf tf2 tf2_geometry_msgs tf2_ros
 #  DEPENDS system_lib
 )
 
@@ -125,8 +132,16 @@ catkin_package(
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
 include_directories(
-# include
+  include
   ${catkin_INCLUDE_DIRS}
+)
+
+add_library(zebrat_hybrid_a_star_global_planner
+  src/hybrid_a_star_global_planner.cpp
+)
+
+target_link_libraries(zebrat_hybrid_a_star_global_planner
+  ${catkin_LIBRARIES}
 )
 
 ## Declare a C++ library
@@ -230,11 +245,21 @@ endif()
 # )
 
 ## Mark other files for installation (e.g. launch and bag files, etc.)
-# install(FILES
-#   # myfile1
-#   # myfile2
-#   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
-# )
+install(TARGETS zebrat_hybrid_a_star_global_planner
+  ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+  LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+  RUNTIME DESTINATION ${CATKIN_GLOBAL_BIN_DESTINATION}
+)
+
+install(DIRECTORY include/${PROJECT_NAME}/
+  DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
+  FILES_MATCHING PATTERN "*.h"
+)
+
+install(FILES
+  hybrid_a_star_global_planner_plugin.xml
+  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
+)
 
 #############
 ## Testing ##

@@ -50,32 +50,45 @@
   <!--   <doc_depend>doxygen</doc_depend> -->
   <buildtool_depend>catkin</buildtool_depend>
   <build_depend>ackermann_msgs</build_depend>
+  <build_depend>base_local_planner</build_depend>
+  <build_depend>costmap_2d</build_depend>
   <build_depend>costmap_converter</build_depend>
   <build_depend>gazebo_msgs</build_depend>
   <build_depend>geometry_msgs</build_depend>
+  <build_depend>nav_core</build_depend>
   <build_depend>nav_msgs</build_depend>
+  <build_depend>pluginlib</build_depend>
   <build_depend>roscpp</build_depend>
   <build_depend>rospy</build_depend>
   <build_depend>sensor_msgs</build_depend>
   <build_depend>std_msgs</build_depend>
   <build_depend>std_srvs</build_depend>
   <build_depend>tf</build_depend>
+  <build_depend>tf2</build_depend>
+  <build_depend>tf2_geometry_msgs</build_depend>
   <build_depend>tf2_ros</build_depend>
 
   <build_export_depend>ackermann_msgs</build_export_depend>
+  <build_export_depend>base_local_planner</build_export_depend>
+  <build_export_depend>costmap_2d</build_export_depend>
   <build_export_depend>costmap_converter</build_export_depend>
   <build_export_depend>gazebo_msgs</build_export_depend>
   <build_export_depend>geometry_msgs</build_export_depend>
+  <build_export_depend>nav_core</build_export_depend>
   <build_export_depend>nav_msgs</build_export_depend>
+  <build_export_depend>pluginlib</build_export_depend>
   <build_export_depend>roscpp</build_export_depend>
   <build_export_depend>rospy</build_export_depend>
   <build_export_depend>sensor_msgs</build_export_depend>
   <build_export_depend>std_msgs</build_export_depend>
   <build_export_depend>std_srvs</build_export_depend>
   <build_export_depend>tf</build_export_depend>
+  <build_export_depend>tf2</build_export_depend>
+  <build_export_depend>tf2_geometry_msgs</build_export_depend>
   <build_export_depend>tf2_ros</build_export_depend>
 
   <exec_depend>ackermann_msgs</exec_depend>
+  <exec_depend>base_local_planner</exec_depend>
   <exec_depend>controller_manager</exec_depend>
   <exec_depend>effort_controllers</exec_depend>
   <exec_depend>gazebo_msgs</exec_depend>
@@ -98,7 +111,9 @@
   <exec_depend>map_server</exec_depend>
   <exec_depend>move_base</exec_depend>
   <exec_depend>move_base_msgs</exec_depend>
+  <exec_depend>nav_core</exec_depend>
   <exec_depend>nav_msgs</exec_depend>
+  <exec_depend>pluginlib</exec_depend>
   <exec_depend>position_controllers</exec_depend>
   <exec_depend>velocity_controllers</exec_depend>
   <exec_depend>robot_state_publisher</exec_depend>
@@ -113,8 +128,10 @@
   <exec_depend>std_msgs</exec_depend>
   <exec_depend>std_srvs</exec_depend>
   <exec_depend>tf</exec_depend>
+  <exec_depend>tf2</exec_depend>
   <exec_depend>tf2_ros</exec_depend>
   <exec_depend>teb_local_planner</exec_depend>
+  <exec_depend>tf2_geometry_msgs</exec_depend>
   <exec_depend>topic_tools</exec_depend>
   <exec_depend>xacro</exec_depend>
 
@@ -124,6 +141,6 @@
   <!-- The export tag contains other, unspecified, tags -->
   <export>
     <!-- Other tools can request additional information be placed here -->
-
+    <nav_core plugin="${prefix}/hybrid_a_star_global_planner_plugin.xml" />
   </export>
 </package>
